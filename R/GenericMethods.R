@@ -198,7 +198,7 @@ setMethod("filterRepTrans",
             # progress bar
             pb <- progress::progress_bar$new(
               format = 'filterRepTrans is running [:bar] :percent in :elapsed',
-              total = length(geneId), clear = FALSE, width = 80
+              total = length(gid), clear = FALSE, width = 80
             )
 
             # loop
