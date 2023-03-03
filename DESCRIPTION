@@ -1,0 +1,23 @@
+Package: BioSeqUtils
+Title: Extract Sequence of Different Features From Annotation and Genome File
+Version: 0.0.0.1
+Maintainer: Jun Zhang <3219030654@stu.cpu.edu.cn>
+Authors@R: 
+    person("Jun", "Zhang", , "3219030654@stu.cpu.edu.cn", role = c("aut", "cre"),
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: For Extracting multiple different features sequence of gene, here supply 
+  a way to get the sequence like exon,5UTR,3UTR,CDS,intron from your own local GTF/GFF
+  annotation file and genome file.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
+Imports: 
+    Biostrings,
+    dplyr,
+    GenomicRanges,
+    magrittr,
+    methods,
+    plyr,
+    progress,
+    rtracklayer
