@@ -20,4 +20,4 @@ library(BioSeqUtils)
 
 ## Citation
 
-> Jun Z (2023). *BioSeqUtils: Extract Sequnece From Genome According to Annotation File.*  https://github.com/junjunlab/BioSeqUtils, https://github.com/junjunlab/BioSeqUtils/wiki/document
+> Jun Z (2023). *BioSeqUtils: Extract Sequnece From Genome According to Annotation File.*  https://github.com/junjunlab/BioSeqUtils, https://github.com/junjunlab/BioSeqUtils/wiki/BioSeqUtils
