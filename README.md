@@ -3,6 +3,8 @@
 
 <!-- badges: start -->
 
+Here supply this BioSeqUtils R package to extract different features sequnce of gene/transcript from your local genome and annotation files. Besides there are many other tools for you to achive this. Any question or advice can be pushed on github [**Issues**](https://github.com/junjunlab/BioSeqUtils/issues) panel.
+
 <!-- badges: end -->
 
 
