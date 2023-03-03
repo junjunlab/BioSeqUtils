@@ -1,0 +1,16 @@
+citHeader("To cite BioSeqUtils in publications use:")
+
+citEntry(
+  entry    = "Article",
+  title    = "BioSeqUtils",
+  author   = "JunZhang",
+  journal  = ,
+  year     = 2023,
+  volume   = ,
+  number   = ,
+  pages    = ,
+  url      = {https://github.com/junjunlab/BioSeqUtils},
+  textVersion = paste(
+
+  )
+)
