@@ -1,6 +1,8 @@
 
 # BioSeqUtils
 
+# ClusterGVis <img src="man/BioSeqUtils-logo.png" align="right" height="200" />
+
 <!-- badges: start -->
 <!-- badges: end -->
 
