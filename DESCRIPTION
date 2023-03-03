@@ -21,3 +21,4 @@ Imports:
     plyr,
     progress,
     rtracklayer
+biocViews: Biostrings GenomicRanges rtracklayer
