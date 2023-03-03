@@ -173,12 +173,6 @@ setMethod("filterRepTrans",
                    selecType = c("lcds","lt"),
                    # 0 for all selections
                    topN = 1,sep = "|"){
-            # progress bar
-            pb <- progress::progress_bar$new(
-              format = 'filterRepTrans is running [:bar] :percent in :elapsed',
-              total = length(geneId), clear = FALSE, width = 80
-            )
-
             # doing now
             selecType <- match.arg(selecType)
 
@@ -199,8 +193,15 @@ setMethod("filterRepTrans",
               tga <- object[which(object$gene_id %in% geneId),]
             }
 
-            # loop
             gid = unique(tga$gene_id)
+
+            # progress bar
+            pb <- progress::progress_bar$new(
+              format = 'filterRepTrans is running [:bar] :percent in :elapsed',
+              total = length(geneId), clear = FALSE, width = 80
+            )
+
+            # loop
             plyr::ldply(1:length(gid),function(x){
               pb$tick()
 
