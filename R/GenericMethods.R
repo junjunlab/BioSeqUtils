@@ -1,4 +1,4 @@
-globalVariables(c("cdslen", "end", "start", 'tga', "tlen"))
+globalVariables(c("cdslen", "end", "start", 'tga', "tlen", "."))
 
 # ==============================================================================
 # setGeneric
@@ -159,10 +159,13 @@ setMethod("filterID",
 #' Default is 1.
 #' Set to 0 to retain all transcripts.
 #' @param sep A character specifying the separator used to separate gene name and
+#  #' @param memorySize Numeric vector of memory size of calculation. Default is 10(GB).
 #' transcript name.
 #' Default is "|".
 #' @return A data.frame containing the longest transcripts for each gene based on
 #' the selected criteria.
+#  #' @import future
+#  #' @import future.apply
 #' @method filterRepTrans GenomeGTF
 #' @export
 setMethod("filterRepTrans",
@@ -171,6 +174,7 @@ setMethod("filterRepTrans",
                    geneName = NULL,
                    geneId = NULL,
                    selecType = c("lcds","lt"),
+                   # memorySize = 10,
                    # 0 for all selections
                    topN = 1,sep = "|"){
             # doing now
@@ -201,8 +205,13 @@ setMethod("filterRepTrans",
               total = length(gid), clear = FALSE, width = 80
             )
 
+            # parallel calculation
+            # options(future.globals.maxSize = memorySize*1000*1024^2)
+            # future::plan("future::multisession")
+
             # loop
             plyr::ldply(1:length(gid),function(x){
+            # future.apply::future_lapply(1:length(gid),function(x){
               pb$tick()
 
               tg <- tga[which(tga$gene_id == gid[x]),]
@@ -210,6 +219,7 @@ setMethod("filterRepTrans",
               # calculate transcript/CDS length
               tida <- unique(tg$transcript_id)
               plyr::ldply(1:length(tida),function(x){
+              # future.apply::future_lapply(1:length(tida),function(x){
 
                 tmp.info <- tg[which(tg$transcript_id == tida[x]),]
                 t.type <- unique(tmp.info$type)
@@ -232,7 +242,8 @@ setMethod("filterRepTrans",
                                          cdslen = cdslen)
 
                 return(tranLength)
-              }) -> lenInfo
+                }) -> lenInfo
+              # }) %>% do.call("rbind",.) %>% data.frame() -> lenInfo
 
               # choose type
               if(selecType == "lt"){
@@ -262,7 +273,8 @@ setMethod("filterRepTrans",
               }
 
               Sys.sleep(0.05)
-            }) -> rep.info
+              }) -> rep.info
+            # }) %>% do.call("rbind",.) %>% data.frame() -> rep.info
 
             return(rep.info)
           })
@@ -279,6 +291,7 @@ setMethod("filterRepTrans",
 #' @param geneName Character vector of gene names to filter by. Default is NULL.
 #' @param geneId Character vector of gene IDs to filter by. Default is NULL.
 #' @param transId Character vector of transcript IDs to filter by. Default is NULL.
+#  #' @param memorySize Numeric vector of memory size of calculation. Default is 10(GB).
 #' @param sep Separator character to use in the long name. Default is "|".
 #'
 #' @return A data frame with columns gid, tid, and tname.
@@ -291,6 +304,7 @@ setMethod("getLongName",
           signature(object = "GenomeGTF"),
           function(object,
                    geneName = NULL,geneId = NULL,transId = NULL,
+                   # memorySize = 10,
                    sep = "|"){
             # load GTF
             ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = transId)
@@ -298,8 +312,13 @@ setMethod("getLongName",
             # get tids
             tid <- unique(ginfo$transcript_id)
 
+            # parallel calculation
+            # options(future.globals.maxSize = memorySize*1000*1024^2)
+            # future::plan("future::multisession")
+
             # loop
             plyr::ldply(1:length(tid),function(x){
+            # future.apply::future_lapply(1:length(tid),function(x){
               ginfo.s <- ginfo[which(ginfo$transcript_id == tid[x]),]
               gname <- ginfo.s$gene_name[1]
               tid <- ginfo.s$transcript_id[1]
@@ -308,27 +327,33 @@ setMethod("getLongName",
               tlen <- sum(ginfo.s[which(ginfo.s$type == "exon"),"width"])
 
               # check whether exist 5UTR and get CDS start position
-              if("5UTR" %in% ginfo.s$type){
-                cds.st <- sum(ginfo.s[which(ginfo.s$type == "5UTR"),"width"]) + 1
+              if("5UTR" %in% ginfo.s$type | "five_prime_utr" %in% ginfo.s$type){
+                cds.st <- sum(ginfo.s[which(ginfo.s$type %in% c("5UTR","five_prime_utr")),"width"]) + 1
               }else{
                 cds.st <- 1
               }
 
               # get CDS length
-              if("CDS" %in% ginfo$type){
-                cds.len <- sum(ginfo.s[which(ginfo.s$type == "CDS"),"width"]) + 1
+              if("CDS" %in% ginfo.s$type){
+                cds.len <- sum(ginfo.s[which(ginfo.s$type == "CDS"),"width"])
               }else{
-                cds.len <- tlen
+                cds.len <- tlen - 1
               }
 
               # get CDS stop position
-              cds.sp <- cds.len + cds.st - 1
+              if("5UTR" %in% ginfo.s$type | "five_prime_utr" %in% ginfo.s$type){
+                cds.sp <- cds.len + cds.st - 1
+              }else{
+                cds.sp <- cds.len + cds.st
+              }
+
 
               # name
               tname <- paste(gname,tid,cds.st,cds.sp,tlen,sep = sep)
               res <- data.frame(gid = gname,tid = tid,tname = tname)
               return(res)
-            }) -> resName
+              }) -> resName
+            # }) %>% do.call("rbind",.) %>% data.frame() -> resName
             return(resName)
           })
 
