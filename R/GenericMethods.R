@@ -1,4 +1,4 @@
-globalVariables(c("cdslen", "end", "start", 'tga', "tlen", "."))
+globalVariables(c("cdslen", "end", "start", 'tga', "tlen", ".","gid"))
 
 # ==============================================================================
 # setGeneric
@@ -236,7 +236,8 @@ setMethod("filterRepTrans",
                 }
 
                 # return data.frame
-                tranLength <- data.frame(gid = unique(tg$gene_id),
+                tranLength <- data.frame(gname = unique(tg$gene_name),
+                                         gid = unique(tg$gene_id),
                                          tid = tida[x],
                                          tlen = sum(tmp$width),
                                          cdslen = cdslen)
@@ -344,13 +345,16 @@ setMethod("getLongName",
               if("5UTR" %in% ginfo.s$type | "five_prime_utr" %in% ginfo.s$type){
                 cds.sp <- cds.len + cds.st - 1
               }else{
-                cds.sp <- cds.len + cds.st
+                if("CDS" %in% ginfo.s$type){
+                  cds.sp <- cds.len + cds.st - 1
+                }else{
+                  cds.sp <- cds.len + cds.st
+                }
               }
 
-
               # name
-              tname <- paste(gname,tid,cds.st,cds.sp,tlen,sep = sep)
-              res <- data.frame(gid = gname,tid = tid,tname = tname)
+              tname <- paste(gname,gid,tid,cds.st,cds.sp,tlen,sep = sep)
+              res <- data.frame(gname = gname,gid = gid,tid = tid,tname = tname)
               return(res)
               }) -> resName
             # }) %>% do.call("rbind",.) %>% data.frame() -> resName
