@@ -1,4 +1,9 @@
-globalVariables(c("cdslen", "end", "start", 'tga', "tlen", "."))
+globalVariables(c("cdslen", "end", "start", 'tga', "tlen", ".",
+                  "cdsed", "geneId", "geneName", "selecType",
+                  "sep", "topN", "transId","cdsst","tname",
+                  '5UTR', 'CDS', 'exon', 'gene_id', 'gene_name',
+                  'gtype', 'transcript_id', 'type', 'typelen',
+                  'width','mytest', 'n', 'seqnames', 'strand'))
 
 # ==============================================================================
 # setGeneric
@@ -25,13 +30,7 @@ setGeneric("myShow",function(object) standardGeneric("myShow"))
 setGeneric("filterID",function(object,...) standardGeneric("filterID"))
 
 
-#' filterRepTrans method for GenomeGTF objects
-#'
-#' @title filterRepTrans method for GenomeGTF objects
-#' @param object A GenomeGTF object
-#' @param ... Other arguments.
-#' @export
-setGeneric("filterRepTrans",function(object,...) standardGeneric("filterRepTrans"))
+# setGeneric("filterRepTrans",function(object,...) standardGeneric("filterRepTrans"))
 
 
 #' getLongName method for GenomeGTF objects
@@ -40,7 +39,7 @@ setGeneric("filterRepTrans",function(object,...) standardGeneric("filterRepTrans
 #' @param object A GenomeGTF object
 #' @param ... Other arguments.
 #' @export
-setGeneric("getLongName",function(object,...) standardGeneric("getLongName"))
+setGeneric("getTransInfo",function(object,...) standardGeneric("getTransInfo"))
 
 
 #' getFeatureFromGenome method for GenomeGTF objects
@@ -60,9 +59,40 @@ setGeneric("getFeatureFromGenome",function(object,...) standardGeneric("getFeatu
 #' @export
 setGeneric("getIntronInfo",function(object,...) standardGeneric("getIntronInfo"))
 
+
+# setGeneric("superExtract",function(object,...) standardGeneric("superExtract"))
+
 # ==============================================================================
 # setMethod
 # ==============================================================================
+setMethod("show",
+          signature(object = "GenomeGTF"),
+          function(object){
+            cat("## GenomeGTF object for Extracting sequences.\n")
+            if(is.null(object@gtf)){
+              cat("## GTF file is NULL.\n")
+            }else{
+              cat("## GTF file is loaded.\n")
+              cat(paste0("## GTF path: ",object@gtfPath,".\n",collapse = ""))
+            }
+
+            if(is.null(object@genome)){
+              cat("## genome file is NULL.\n")
+            }else{
+              cat("## genome file is loaded.\n")
+              cat(paste0("## Genome path: ",object@genomePath,".\n",collapse = ""))
+            }
+
+            if(is.null(object@representTrans)){
+              cat("## representTrans file is NULL.\n")
+            }else{
+              cat("## representTrans file is loaded.\n")
+            }
+
+            # cat("## representTrans slot is NULL.\n")
+            cat("## intron slot is NULL.\n")
+          })
+
 #' Show method for GenomeGTF object
 #'
 #' This function displays information about a GenomeGTF object, including the
@@ -93,7 +123,13 @@ setMethod("myShow",
               cat("## genome file is loaded.\n")
             }
 
-            cat("## representTrans slot is NULL.\n")
+            if(is.null(object@representTrans)){
+              cat("## representTrans file is NULL.\n")
+            }else{
+              cat("## representTrans file is loaded.\n")
+            }
+
+            # cat("## representTrans slot is NULL.\n")
             cat("## intron slot is NULL.\n")
           })
 
@@ -139,148 +175,124 @@ setMethod("filterID",
           })
 
 
-# filterRepTrans
-# filter the longest transcript from annotation file and return transcript length
-# and CDS length with data frame.
-#' Filter redundant transcripts and retain the longest ones based on gene ID or
-#' gene name
-#'
-#' This function filters redundant transcripts based on gene ID or gene name,
-#' and retains the longest ones according to the selected criteria.
-#'
-#' @param object A GenomeGTF object or a data.frame with GTF
-#'  format.
-#' @param geneName A character vector of gene names. Default is NULL.
-#' @param geneId A character vector of gene IDs. Default is NULL.
-#' @param selecType A character vector specifying the selection criteria.
-#' Must be either "lt" for longest transcript or "lcds" for longest CDS. Default
-#' is "lcds".
-#' @param topN An integer indicating the number of longest transcripts to retain.
-#' Default is 1.
-#' Set to 0 to retain all transcripts.
-#' @param sep A character specifying the separator used to separate gene name and
-#  #' @param memorySize Numeric vector of memory size of calculation. Default is 10(GB).
-#' transcript name.
-#' Default is "|".
-#' @return A data.frame containing the longest transcripts for each gene based on
-#' the selected criteria.
-#  #' @import future
-#  #' @import future.apply
-#' @method filterRepTrans GenomeGTF
-#' @export
-setMethod("filterRepTrans",
-          signature(object = "GenomeGTF"),
-          function(object,
-                   geneName = NULL,
-                   geneId = NULL,
-                   selecType = c("lcds","lt"),
-                   # memorySize = 10,
-                   # 0 for all selections
-                   topN = 1,sep = "|"){
-            # doing now
-            selecType <- match.arg(selecType)
 
-            # get data
-            if(as.character(class(object)) == "GenomeGTF"){
-              gtf <- as.data.frame(object@gtf)
-
-              # choose type
-              if(!is.null(geneName) & is.null(geneId)){
-                tga <- gtf[which(gtf$gene_name %in% geneName),]
-              }else if(is.null(geneName) & !is.null(geneId)){
-                tga <- gtf[which(gtf$gene_id %in% geneId),]
-              }else if(!is.null(geneName) & !is.null(geneId)){
-                tga <- gtf[which(gtf$gene_name == geneName & gtf$gene_id == geneId),]
-              }
-
-            }else if(as.character(class(object)) == "data.frame"){
-              tga <- object[which(object$gene_id %in% geneId),]
-            }
-
-            gid = unique(tga$gene_id)
-
-            # progress bar
-            pb <- progress::progress_bar$new(
-              format = 'filterRepTrans is running [:bar] :percent in :elapsed',
-              total = length(gid), clear = FALSE, width = 80
-            )
-
-            # parallel calculation
-            # options(future.globals.maxSize = memorySize*1000*1024^2)
-            # future::plan("future::multisession")
-
-            # loop
-            plyr::ldply(1:length(gid),function(x){
-            # future.apply::future_lapply(1:length(gid),function(x){
-              pb$tick()
-
-              tg <- tga[which(tga$gene_id == gid[x]),]
-
-              # calculate transcript/CDS length
-              tida <- unique(tg$transcript_id)
-              plyr::ldply(1:length(tida),function(x){
-              # future.apply::future_lapply(1:length(tida),function(x){
-
-                tmp.info <- tg[which(tg$transcript_id == tida[x]),]
-                t.type <- unique(tmp.info$type)
-
-                # exon info
-                tmp <- tmp.info[which(tmp.info$type == "exon"),]
-
-                # check transcript whether has CDS
-                if("CDS" %in% t.type){
-                  tmp2 <- tmp.info[which(tmp.info$type == "CDS"),]
-                  cdslen = sum(tmp2$width)
-                }else{
-                  cdslen = 0
-                }
-
-                # return data.frame
-                tranLength <- data.frame(gid = unique(tg$gene_id),
-                                         tid = tida[x],
-                                         tlen = sum(tmp$width),
-                                         cdslen = cdslen)
-
-                return(tranLength)
-                }) -> lenInfo
-              # }) %>% do.call("rbind",.) %>% data.frame() -> lenInfo
-
-              # choose type
-              if(selecType == "lt"){
-                rankTran <- lenInfo %>%
-                  dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen))
-              }else if(selecType == "lcds"){
-                rankTran <- lenInfo %>%
-                  dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen))
-              }else{
-                message("Please choose 'lt' or 'lcds'!")
-              }
-
-              # get long name
-              rankTran.name <- getLongName(object = object,transId = rankTran$tid,sep = sep)
-              rankTran$tname <- rankTran.name$tname
-
-              # return length info
-              if(topN == 0){
-                return(rankTran)
-              }else{
-                plyr::ldply(unique(rankTran$gid),function(x){
-                  rankTran <- rankTran[which(rankTran$gid == x),] %>%
-                    dplyr::slice_head(n = as.numeric(topN))
-                  return(rankTran)
-                }) -> rankTran
-                return(rankTran)
-              }
-
-              Sys.sleep(0.05)
-              }) -> rep.info
-            # }) %>% do.call("rbind",.) %>% data.frame() -> rep.info
-
-            return(rep.info)
-          })
+# setMethod("filterRepTrans",
+#           signature(object = "GenomeGTF"),
+#           function(object,
+#                    geneName = NULL,
+#                    geneId = NULL,
+#                    selecType = c("lcds","lt"),
+#                    # 0 for all selections
+#                    topN = 1,sep = "|"){
+#             # doing now
+#             selecType <- match.arg(selecType)
+#
+#             # get data
+#             if(as.character(class(object)) == "GenomeGTF"){
+#               gtf <- as.data.frame(object@gtf)
+#
+#               # choose type
+#               if(!is.null(geneName) & is.null(geneId)){
+#                 tga <- gtf[which(gtf$gene_name %in% geneName),]
+#               }else if(is.null(geneName) & !is.null(geneId)){
+#                 tga <- gtf[which(gtf$gene_id %in% geneId),]
+#               }else if(!is.null(geneName) & !is.null(geneId)){
+#                 tga <- gtf[which(gtf$gene_name == geneName & gtf$gene_id == geneId),]
+#               }
+#
+#             }else if(as.character(class(object)) == "data.frame"){
+#               tga <- object[which(object$gene_id %in% geneId),]
+#             }
+#
+#             gid = unique(tga$gene_id)
+#
+#             # progress bar
+#             pb <- progress::progress_bar$new(
+#               format = 'filterRepTrans is running [:bar] :percent in :elapsed',
+#               total = length(gid), clear = FALSE, width = 80
+#             )
+#
+#             # parallel calculation
+#             # options(future.globals.maxSize = memorySize*1000*1024^2)
+#             # future::plan("future::multisession")
+#
+#             # loop
+#             plyr::ldply(1:length(gid),function(x){
+#               # future.apply::future_lapply(1:length(gid),function(x){
+#               pb$tick()
+#
+#               tg <- tga[which(tga$gene_id == gid[x]),]
+#
+#               # calculate transcript/CDS length
+#               tida <- unique(tg$transcript_id)
+#               plyr::ldply(1:length(tida),function(x){
+#                 # future.apply::future_lapply(1:length(tida),function(x){
+#
+#                 tmp.info <- tg[which(tg$transcript_id == tida[x]),]
+#                 t.type <- unique(tmp.info$type)
+#
+#                 # exon info
+#                 tmp <- tmp.info[which(tmp.info$type == "exon"),]
+#
+#                 # check transcript whether has CDS
+#                 if("CDS" %in% t.type){
+#                   tmp2 <- tmp.info[which(tmp.info$type == "CDS"),]
+#                   cdslen = sum(tmp2$width)
+#                 }else{
+#                   cdslen = 0
+#                 }
+#
+#                 # return data.frame
+#                 tranLength <- data.frame(gname = unique(tg$gene_name),
+#                                          gid = unique(tg$gene_id),
+#                                          tid = tida[x],
+#                                          tlen = sum(tmp$width),
+#                                          cdslen = cdslen)
+#
+#                 return(tranLength)
+#               }) -> lenInfo
+#               # }) %>% do.call("rbind",.) %>% data.frame() -> lenInfo
+#
+#               # choose type
+#               if(selecType == "lt"){
+#                 rankTran <- lenInfo %>%
+#                   dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen))
+#               }else if(selecType == "lcds"){
+#                 rankTran <- lenInfo %>%
+#                   dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen))
+#               }else{
+#                 message("Please choose 'lt' or 'lcds'!")
+#               }
+#
+#               # get long name
+#               rankTran.name <- getLongName(object = object,transId = rankTran$tid,sep = sep)
+#               # rankTran$tname <- rankTran.name$tname
+#
+#               rankTran$tname <- ifelse(rankTran$cdslen == 0,
+#                                        paste(rankTran.name$tname,"NC",sep = sep),
+#                                        paste(rankTran.name$tname,"CD",sep = sep))
+#
+#               # return length info
+#               if(topN == 0){
+#                 return(rankTran)
+#               }else{
+#                 plyr::ldply(unique(rankTran$gid),function(x){
+#                   rankTran <- rankTran[which(rankTran$gid == x),] %>%
+#                     dplyr::slice_head(n = as.numeric(topN))
+#                   return(rankTran)
+#                 }) -> rankTran
+#                 return(rankTran)
+#               }
+#
+#               Sys.sleep(0.05)
+#             }) -> rep.info
+#             # }) %>% do.call("rbind",.) %>% data.frame() -> rep.info
+#
+#             return(rep.info)
+#           })
 
 
-# getLongName
+# getTransInfo
 # calculate CDS absolute start position and stop position for transcript.
 #'Get long name of transcripts in GenomeGTF object
 #'
@@ -291,72 +303,157 @@ setMethod("filterRepTrans",
 #' @param geneName Character vector of gene names to filter by. Default is NULL.
 #' @param geneId Character vector of gene IDs to filter by. Default is NULL.
 #' @param transId Character vector of transcript IDs to filter by. Default is NULL.
-#  #' @param memorySize Numeric vector of memory size of calculation. Default is 10(GB).
+#' @param selecType A character vector specifying the selection criteria.
+#' Must be either "lt" for longest transcript or "lcds" for longest CDS. Default
+#' is "lcds".
+#' @param topN An integer indicating the number of longest transcripts to retain.
+#' Default is 1. Set to 0 to retain all transcripts.
 #' @param sep Separator character to use in the long name. Default is "|".
 #'
-#' @return A data frame with columns gid, tid, and tname.
+#' @return A data frame.
 #'
-#' @importFrom plyr llply ldply
-#' @importFrom dplyr mutate desc select arrange slice_head
-#' @method getLongName GenomeGTF
+#' @importFrom dplyr mutate desc select arrange slice_head group_by
+#' @method getTransInfo GenomeGTF
 #' @export
-setMethod("getLongName",
+setMethod("getTransInfo",
           signature(object = "GenomeGTF"),
           function(object,
                    geneName = NULL,geneId = NULL,transId = NULL,
-                   # memorySize = 10,
-                   sep = "|"){
+                   selecType = c("lcds","lt"),
+                   topN = 1,sep = "|"){
             # load GTF
             ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = transId)
 
-            # get tids
-            tid <- unique(ginfo$transcript_id)
+            # ===============================================================================
+            # recode
+            leninfo <- ginfo[which(ginfo$type %in% c("exon","5UTR","five_prime_utr","CDS","3UTR","three_prime_utr")),] %>%
+              dplyr::group_by(gene_name,gene_id,transcript_id,type) %>%
+              dplyr::summarise(typelen = sum(width)) %>%
+              tidyr::spread(.,type,typelen,fill = 0) %>%
+              dplyr::mutate(gtype = ifelse(`5UTR` > 0 | `CDS` > 0,"CD","NC")) %>%
+              dplyr::mutate(cdsst = ifelse(`gtype` == "CD",`5UTR` + 1,1),
+                            cdsed = ifelse(`gtype` == "CD",`cdsst` + `CDS`,exon),
+                            tname = paste(gene_name,gene_id,transcript_id,cdsst,cdsed,exon,gtype,sep = "|"))
 
-            # parallel calculation
-            # options(future.globals.maxSize = memorySize*1000*1024^2)
-            # future::plan("future::multisession")
-
-            # loop
-            plyr::ldply(1:length(tid),function(x){
-            # future.apply::future_lapply(1:length(tid),function(x){
-              ginfo.s <- ginfo[which(ginfo$transcript_id == tid[x]),]
-              gname <- ginfo.s$gene_name[1]
-              tid <- ginfo.s$transcript_id[1]
-
-              # transcript length
-              tlen <- sum(ginfo.s[which(ginfo.s$type == "exon"),"width"])
-
-              # check whether exist 5UTR and get CDS start position
-              if("5UTR" %in% ginfo.s$type | "five_prime_utr" %in% ginfo.s$type){
-                cds.st <- sum(ginfo.s[which(ginfo.s$type %in% c("5UTR","five_prime_utr")),"width"]) + 1
+            # ===============================================================================
+            # filter
+            if(topN == 0){
+              final.res <- leninfo
+            }else{
+              # choose type
+              if(selecType == "lt"){
+                final.res <- leninfo %>%
+                  dplyr::group_by(gene_name,gene_id) %>%
+                  dplyr::arrange(dplyr::desc(exon),dplyr::desc(CDS)) %>%
+                  dplyr::slice_head(n = as.numeric(topN))
+              }else if(selecType == "lcds"){
+                final.res <- leninfo %>%
+                  dplyr::group_by(gene_name,gene_id) %>%
+                  dplyr::arrange(dplyr::desc(CDS),dplyr::desc(exon)) %>%
+                  dplyr::slice_head(n = as.numeric(topN))
               }else{
-                cds.st <- 1
+                message("Please choose 'lt' or 'lcds'!")
               }
+            }
 
-              # get CDS length
-              if("CDS" %in% ginfo.s$type){
-                cds.len <- sum(ginfo.s[which(ginfo.s$type == "CDS"),"width"])
-              }else{
-                cds.len <- tlen - 1
-              }
-
-              # get CDS stop position
-              if("5UTR" %in% ginfo.s$type | "five_prime_utr" %in% ginfo.s$type){
-                cds.sp <- cds.len + cds.st - 1
-              }else{
-                cds.sp <- cds.len + cds.st
-              }
-
-
-              # name
-              tname <- paste(gname,tid,cds.st,cds.sp,tlen,sep = sep)
-              res <- data.frame(gid = gname,tid = tid,tname = tname)
-              return(res)
-              }) -> resName
-            # }) %>% do.call("rbind",.) %>% data.frame() -> resName
-            return(resName)
+            return(final.res)
           })
 
+
+
+# setMethod("superExtract",
+#           signature(object = "GenomeGTF"),
+#           function(object,
+#                    type = c("super.getLongName","super.filterRepTrans"),
+#                    geneName = NULL,geneId = NULL,transId = NULL,
+#                    selecType = c("lcds","lt"),topN = 1,sep = "|",
+#                    ...){
+#             type <- match.arg(type)
+#
+#             # select info
+#             if(!is.null(object@representTrans)){
+#               # load gtf
+#               gtf <- object@representTrans
+#
+#               if(!is.null(geneName) & is.null(geneId) & is.null(transId)){
+#                 ginfo <- gtf[which(gtf$gname %in% geneName),]
+#               }else if(is.null(geneName) & !is.null(geneId) & is.null(transId)){
+#                 ginfo <- gtf[which(gtf$gid %in% geneId),]
+#               }else if(is.null(geneName) & is.null(geneId) & !is.null(transId)){
+#                 ginfo <- gtf[which(gtf$tid %in% transId),]
+#               }else if(!is.null(geneName) & is.null(geneId) & !is.null(transId)){
+#                 ginfo <- gtf[which(gtf$gname == geneName & gtf$tid == transId),]
+#               }else if(is.null(geneName) & !is.null(geneId) & !is.null(transId)){
+#                 ginfo <- gtf[which(gtf$gid == geneId & gtf$tid == transId),]
+#               }else{
+#                 message("Please choose again.")
+#               }
+#
+#               # check type
+#               if(type == "super.getLongName"){
+#                 if(sep != "|"){
+#                   ginfo.sub <- ginfo[,c("gname","gid","tid","tname")] %>%
+#                     dplyr::mutate(tname = gsub(pattern = "\\|",replacement = sep,x = .))
+#                 }else{
+#                   ginfo.sub <- ginfo[,c("gname","gid","tid","tname")]
+#                 }
+#                 return(ginfo.sub)
+#               }else if(type == "super.filterRepTrans"){
+#                 ginfo.sub <- ginfo[,c("gname","gid","tid","tlen","cdslen","tname")]
+#
+#                 # loop
+#                 # plyr::ldply(unique(ginfo.sub$gid),function(x){
+#                 #   tmp <- ginfo.sub[which(ginfo.sub$gid == x),]
+#                 #
+#                 #   # choose type
+#                 #   if(selecType == "lt"){
+#                 #     rankTran <- tmp %>%
+#                 #       dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen))
+#                 #   }else if(selecType == "lcds"){
+#                 #     rankTran <- tmp %>%
+#                 #       dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen))
+#                 #   }else{
+#                 #     message("Please choose 'lt' or 'lcds'!")
+#                 #   }
+#                 #
+#                 #   # return length info
+#                 #   if(topN == 0){
+#                 #     return(rankTran)
+#                 #   }else{
+#                 #     rankTran <- rankTran %>%
+#                 #       dplyr::slice_head(n = as.numeric(topN))
+#                 #     return(rankTran)
+#                 #   }
+#                 # }) %>% data.frame() -> final.res
+#
+              #   if(topN == 0){
+              #     final.res <- ginfo.sub
+              #   }else{
+              #     # choose type
+              #     if(selecType == "lt"){
+              #       final.res <- ginfo.sub %>%
+              #         dplyr::group_by(gname,gid) %>%
+              #         dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen)) %>%
+              #         dplyr::slice_head(n = as.numeric(topN))
+              #     }else if(selecType == "lcds"){
+              #       final.res <- ginfo.sub %>%
+              #         dplyr::group_by(gname,gid) %>%
+              #         dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen)) %>%
+              #         dplyr::slice_head(n = as.numeric(topN))
+              #     }else{
+              #       message("Please choose 'lt' or 'lcds'!")
+              #     }
+              #   }
+              #
+              #   return(final.res)
+              # }else{
+              #   message("Please choose correct type.")
+              # }
+#
+#             }else{
+#               message("representTrans slot is null.")
+#             }
+#           })
 
 # getFeatureFromGenome
 # extract "5UTR","five_prime_utr","3UTR","three_prime_utr","exon","CDS" and
@@ -387,6 +484,7 @@ setMethod("getLongName",
 #' @param geneSeq A logical value specifying whether to extract the entire gene
 #' sequence instead of the feature sequence. Default is FALSE.
 #'
+#' @importFrom plyr llply
 #' @return A \code{DNAStringSet} object containing the genomic sequences of the
 #' extracted features.
 #' @method getFeatureFromGenome GenomeGTF
@@ -402,134 +500,108 @@ setMethod("getFeatureFromGenome",
             type <- match.arg(type)
 
             # load genome sequences
-            myFASTA <- object@genome
+            genome <- object@genome
 
             # how to get id
             if(!is.null(nameData)){
               # load GTF
-              ginfo <- as.data.frame(object@gtf)
-
-              # character or data.frame
-              if(is.character(nameData)){
-                tid <- nameData
-                tid.name <- names(tid)
+              if(type == "intron"){
+                ginfo <- getIntronInfo(object = object,geneName = geneName,geneId = geneId,transId = nameData)
               }else{
-                tid <- nameData$tid
-                tid.name <- nameData$tname
+                ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = nameData)
               }
+
+              tid <- nameData
+              tid.name <- names(tid)
             }else{
               # load GTF
-              ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = transId)
+              if(type == "intron"){
+                ginfo <- getIntronInfo(object = object,geneName = geneName,geneId = geneId,transId = transId)
+              }else{
+                ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = transId)
+              }
 
               # get tids
               tid <- unique(ginfo$transcript_id)
             }
 
+            # getseq function
+            getMyseq <- function(genome,chr,start,end,strand){
+              if(strand == "+"){
+                seq <- genome[[chr]][start:end]
+              }else{
+                seq <- Biostrings::reverseComplement(genome[[chr]][start:end])
+              }
+              return(as.character(seq))
+            }
+
+            # filter chromosomes
+            genomeChr <- names(mytest@genome)
+            filteredInfo <- ginfo[which(ginfo$seqnames %in% genomeChr),]
+
+            # get type info
+            seqinfo.tmp <- filteredInfo[which(filteredInfo$type %in% c(type)),] %>%
+              dplyr::select(gene_name,gene_id,transcript_id,type,seqnames,start,end,strand) %>%
+              dplyr::group_by(gene_name,gene_id,transcript_id,type)
+
+            # wthether get intron for other types
+            if(geneSeq == TRUE){
+              seqinfo <- seqinfo.tmp %>%
+                dplyr::summarise(start = min(start),end = max(end),strand = unique(strand)) %>%
+                dplyr::arrange(ifelse(strand == "+",c(start,end),c(desc(start),desc(end))),.by_group = T) %>%
+                dplyr::mutate(typeNum = 1:dplyr::n())
+            }else{
+              seqinfo <- seqinfo.tmp %>%
+                dplyr::arrange(ifelse(strand == "+",c(start,end),c(desc(start),desc(end))),.by_group = T) %>%
+                dplyr::mutate(typeNum = 1:dplyr::n())
+            }
+
+            # tname
+            all.res <- getTransInfo(object = object,geneName = unique(filteredInfo$gene_name),topN = 0) %>%
+              dplyr::ungroup() %>%
+              dplyr::select(transcript_id,tname)
+
+            # merge
+            seqinfo <- suppressMessages(dplyr::left_join(seqinfo,all.res))
+
+            id <- unique(seqinfo$transcript_id)
+
             # progress bar
             pb <- progress::progress_bar$new(
               format = 'getFeatureFromGenome is running [:bar] :percent in :elapsed',
-              total = length(tid), clear = FALSE, width = 80
+              total = length(id), clear = FALSE, width = 80
             )
 
-            # loop
-            plyr::llply(1:length(tid),function(x){
+            # loop get seq
+            # x = 1
+            purrr::map(1:length(id),function(x){
               pb$tick()
+              tmp <- seqinfo[which(seqinfo$transcript_id == id[x]),]
+              purrr::map(1:nrow(tmp),function(x){
+                tmp1 <- tmp[x,]
+                getMyseq(genome,tmp1$seqnames,tmp1$start,tmp1$end,tmp1$strand)
+              }) -> seqlist
 
-              # check utr or CDS
               if(type == "intron"){
-                ginfo.fet <- getIntronInfo(object,transId = tid[x])
+                seq <- seqlist
               }else{
-                ginfo.fet <- ginfo[which(ginfo$transcript_id == tid[x]),]
+                seq <- paste0(seqlist,collapse = "")
               }
 
-              # check features
-              if(type %in% unique(ginfo.fet$type)){
+              Sys.sleep(0.05)
+              return(seq)
+            }) -> alllist
 
-                if(type == "intron"){
-                  exon.info <- ginfo.fet[which(ginfo.fet$type %in% type),]
-                }else{
-                  exon.info <- ginfo[which(ginfo$type %in% type & ginfo$transcript_id == tid[x]),]
-                }
+            # assign names
+            if(type == "intron"){
+              alllist <- unlist(alllist)
+              names(alllist) <- paste(seqinfo$tname,seqinfo$typeNum,sep = sep)
+            }else{
+              names(alllist) <- unique(seqinfo$tname)
+            }
 
-                # check whether genome has this chromosome
-                if(unique(exon.info$seqnames) %in% names(myFASTA)){
-                  # strand
-                  strand.info <- unique(exon.info$strand)
-                  if(strand.info == "+"){
-                    exon.arrange <- exon.info %>% dplyr::arrange(start,end)
-                  }else{
-                    exon.arrange <- exon.info %>% dplyr::arrange(dplyr::desc(start),dplyr::desc(end))
-                  }
-
-                  # whether extract gene sequnce
-                  if(geneSeq == TRUE){
-                    exon.arrange <- exon.arrange[1,] %>%
-                      dplyr::mutate(start = exon.arrange$start[1],
-                                    end = exon.arrange$end[nrow(exon.arrange)])
-                  }else{
-                    exon.arrange <- exon.arrange
-                  }
-
-                  # fetch exon seq
-                  # x = 1
-                  plyr::llply(1:nrow(exon.arrange),function(x){
-                    tmp <- exon.arrange[x,]
-
-                    if(strand.info == "+"){
-                      seq <- myFASTA[[tmp$seqnames]][tmp$start:tmp$end]
-                    }else{
-                      seq <- Biostrings::reverseComplement(myFASTA[[tmp$seqnames]][tmp$start:tmp$end])
-                    }
-
-                    # as.character(seq)
-                    as(seq,"character")
-                  }) -> exon.seqs
-
-                  # final.seq <- Biostrings::DNAStringSet(paste0(exon.seqs,collapse = ""))
-                  if(is.null(nameData)){
-                    if(type == "intron"){
-                      final.seq <- exon.seqs
-
-                      tid.name <- paste(unique(exon.arrange$gene_name),unique(exon.arrange$gene_id),
-                                        unique(exon.arrange$transcript_id),1:nrow(exon.arrange),
-                                        sep = sep)
-                    }else{
-                      final.seq <- paste0(exon.seqs,collapse = "")
-
-                      tid.name <- paste(unique(exon.arrange$gene_name),unique(exon.arrange$gene_id),
-                                        unique(exon.arrange$transcript_id),
-                                        sep = sep)
-                    }
-                    # assign name
-                    names(final.seq) <- tid.name
-                  }else{
-                    if(type == "intron"){
-                      final.seq <- exon.seqs
-
-                      # assign name
-                      names(final.seq) <- paste(tid.name[x],exon.arrange$exon_number,sep = sep)
-                    }else{
-                      final.seq <- paste0(exon.seqs,collapse = "")
-
-                      # assign name
-                      names(final.seq) <- tid.name[x]
-                    }
-                  }
-
-                  return(final.seq)
-                }else{
-                  message(paste0("Gene: ",tid[x]," chromosome ",unique(exon.info$seqnames),
-                                 " is not in genome file. Skiping this."))
-                }
-              }else{
-                message(paste0("Gene: ",tid[x]," ",type," is not found. Skiping this."))
-              }
-
-              # return(final.seq)
-            }) -> all.seqs
-
-            res.seq <- Biostrings::DNAStringSet(unlist(all.seqs))
-            Sys.sleep(0.05)
+            # to DNAStringSet
+            res.seq <- Biostrings::DNAStringSet(unlist(alllist))
             return(res.seq)
           })
 

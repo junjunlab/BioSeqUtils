@@ -13,13 +13,13 @@ loadGenomeGTF(
 )
 }
 \arguments{
-\item{gtfPath}{The path to the GTF or GFF annotation file.}
+\item{gtfPath}{The path to the GTF or GFF annotation file. Default is NULL.}
 
-\item{genomePath}{The path to the genome fasta file.}
+\item{genomePath}{The path to the genome fasta file. Default is NULL.}
 
-\item{format}{The annotation file format ("gtf" or "gff"), default is "gtf".}
+\item{format}{The annotation file format ("gtf" or "gff"). Default is "gtf".}
 
-\item{filterProtein}{Whether to filter protein-coding genes, default is FALSE.}
+\item{filterProtein}{Whether to filter protein-coding genes. Default is FALSE.}
 }
 \value{
 A GenomeGTF object containing genome annotation information.

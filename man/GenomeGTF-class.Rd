@@ -21,6 +21,10 @@ GenomeGTF
 
 \item{\code{intron}}{data.frame. The intron data.}
 
+\item{\code{gtfPath}}{character. Path for annnotation file.}
+
+\item{\code{genomePath}}{character. Path for genome file.}
+
 \item{\code{ranges}}{GroupedIRanges. Null.}
 }}
 
