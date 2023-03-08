@@ -25,3 +25,4 @@ library(BioSeqUtils)
 ## Related blogs
 
 > - [**基因特征序列提取 R 包 BioSeqUtils**](https://mp.weixin.qq.com/s?__biz=MzkyMTI1MTYxNA==&mid=2247508252&idx=1&sn=d7461dc312dba82b1a795331955e9fac&chksm=c1849b6df6f3127b4a4e9bcad885fff6eb4b69dc62ca29dc90d0935a39f2c160c6c78ea761e9&token=1422368458&lang=zh_CN#rd)
+> - [**About BioSeqUtils**](https://mp.weixin.qq.com/s?__biz=MzkyMTI1MTYxNA==&mid=2247508288&idx=1&sn=749071718786c08fc380247fa69d25ce&chksm=c1849b31f6f312271573bf922caf4e7cbce0add38f4da9e45540197da45ab35a3bdcbf93c2e2&token=1422368458&lang=zh_CN#rd)
