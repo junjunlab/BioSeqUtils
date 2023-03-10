@@ -1,13 +1,10 @@
-<<<<<<< HEAD
+
 globalVariables(c("cdslen", "end", "start", 'tga', "tlen", ".",
                   "cdsed", "geneId", "geneName", "selecType",
                   "sep", "topN", "transId","cdsst","tname",
                   '5UTR', 'CDS', 'exon', 'gene_id', 'gene_name',
                   'gtype', 'transcript_id', 'type', 'typelen',
                   'width','mytest', 'n', 'seqnames', 'strand'))
-=======
-globalVariables(c("cdslen", "end", "start", 'tga', "tlen", ".","gid"))
->>>>>>> 7eb1588e216cfecccd886a9314e6486e4fc94c9e
 
 # ==============================================================================
 # setGeneric
@@ -179,225 +176,6 @@ setMethod("filterID",
           })
 
 
-
-<<<<<<< HEAD
-# setMethod("filterRepTrans",
-#           signature(object = "GenomeGTF"),
-#           function(object,
-#                    geneName = NULL,
-#                    geneId = NULL,
-#                    selecType = c("lcds","lt"),
-#                    # 0 for all selections
-#                    topN = 1,sep = "|"){
-#             # doing now
-#             selecType <- match.arg(selecType)
-#
-#             # get data
-#             if(as.character(class(object)) == "GenomeGTF"){
-#               gtf <- as.data.frame(object@gtf)
-#
-#               # choose type
-#               if(!is.null(geneName) & is.null(geneId)){
-#                 tga <- gtf[which(gtf$gene_name %in% geneName),]
-#               }else if(is.null(geneName) & !is.null(geneId)){
-#                 tga <- gtf[which(gtf$gene_id %in% geneId),]
-#               }else if(!is.null(geneName) & !is.null(geneId)){
-#                 tga <- gtf[which(gtf$gene_name == geneName & gtf$gene_id == geneId),]
-#               }
-#
-#             }else if(as.character(class(object)) == "data.frame"){
-#               tga <- object[which(object$gene_id %in% geneId),]
-#             }
-#
-#             gid = unique(tga$gene_id)
-#
-#             # progress bar
-#             pb <- progress::progress_bar$new(
-#               format = 'filterRepTrans is running [:bar] :percent in :elapsed',
-#               total = length(gid), clear = FALSE, width = 80
-#             )
-#
-#             # parallel calculation
-#             # options(future.globals.maxSize = memorySize*1000*1024^2)
-#             # future::plan("future::multisession")
-#
-#             # loop
-#             plyr::ldply(1:length(gid),function(x){
-#               # future.apply::future_lapply(1:length(gid),function(x){
-#               pb$tick()
-#
-#               tg <- tga[which(tga$gene_id == gid[x]),]
-#
-#               # calculate transcript/CDS length
-#               tida <- unique(tg$transcript_id)
-#               plyr::ldply(1:length(tida),function(x){
-#                 # future.apply::future_lapply(1:length(tida),function(x){
-#
-#                 tmp.info <- tg[which(tg$transcript_id == tida[x]),]
-#                 t.type <- unique(tmp.info$type)
-#
-#                 # exon info
-#                 tmp <- tmp.info[which(tmp.info$type == "exon"),]
-#
-#                 # check transcript whether has CDS
-#                 if("CDS" %in% t.type){
-#                   tmp2 <- tmp.info[which(tmp.info$type == "CDS"),]
-#                   cdslen = sum(tmp2$width)
-#                 }else{
-#                   cdslen = 0
-#                 }
-#
-#                 # return data.frame
-#                 tranLength <- data.frame(gname = unique(tg$gene_name),
-#                                          gid = unique(tg$gene_id),
-#                                          tid = tida[x],
-#                                          tlen = sum(tmp$width),
-#                                          cdslen = cdslen)
-#
-#                 return(tranLength)
-#               }) -> lenInfo
-#               # }) %>% do.call("rbind",.) %>% data.frame() -> lenInfo
-#
-#               # choose type
-#               if(selecType == "lt"){
-#                 rankTran <- lenInfo %>%
-#                   dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen))
-#               }else if(selecType == "lcds"){
-#                 rankTran <- lenInfo %>%
-#                   dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen))
-#               }else{
-#                 message("Please choose 'lt' or 'lcds'!")
-#               }
-#
-#               # get long name
-#               rankTran.name <- getLongName(object = object,transId = rankTran$tid,sep = sep)
-#               # rankTran$tname <- rankTran.name$tname
-#
-#               rankTran$tname <- ifelse(rankTran$cdslen == 0,
-#                                        paste(rankTran.name$tname,"NC",sep = sep),
-#                                        paste(rankTran.name$tname,"CD",sep = sep))
-#
-#               # return length info
-#               if(topN == 0){
-#                 return(rankTran)
-#               }else{
-#                 plyr::ldply(unique(rankTran$gid),function(x){
-#                   rankTran <- rankTran[which(rankTran$gid == x),] %>%
-#                     dplyr::slice_head(n = as.numeric(topN))
-#                   return(rankTran)
-#                 }) -> rankTran
-#                 return(rankTran)
-#               }
-#
-#               Sys.sleep(0.05)
-#             }) -> rep.info
-#             # }) %>% do.call("rbind",.) %>% data.frame() -> rep.info
-#
-#             return(rep.info)
-#           })
-=======
-            # get data
-            if(as.character(class(object)) == "GenomeGTF"){
-              gtf <- as.data.frame(object@gtf)
-
-              # choose type
-              if(!is.null(geneName) & is.null(geneId)){
-                tga <- gtf[which(gtf$gene_name %in% geneName),]
-              }else if(is.null(geneName) & !is.null(geneId)){
-                tga <- gtf[which(gtf$gene_id %in% geneId),]
-              }else if(!is.null(geneName) & !is.null(geneId)){
-                tga <- gtf[which(gtf$gene_name == geneName & gtf$gene_id == geneId),]
-              }
-
-            }else if(as.character(class(object)) == "data.frame"){
-              tga <- object[which(object$gene_id %in% geneId),]
-            }
-
-            gid = unique(tga$gene_id)
-
-            # progress bar
-            pb <- progress::progress_bar$new(
-              format = 'filterRepTrans is running [:bar] :percent in :elapsed',
-              total = length(gid), clear = FALSE, width = 80
-            )
-
-            # parallel calculation
-            # options(future.globals.maxSize = memorySize*1000*1024^2)
-            # future::plan("future::multisession")
-
-            # loop
-            plyr::ldply(1:length(gid),function(x){
-            # future.apply::future_lapply(1:length(gid),function(x){
-              pb$tick()
-
-              tg <- tga[which(tga$gene_id == gid[x]),]
-
-              # calculate transcript/CDS length
-              tida <- unique(tg$transcript_id)
-              plyr::ldply(1:length(tida),function(x){
-              # future.apply::future_lapply(1:length(tida),function(x){
-
-                tmp.info <- tg[which(tg$transcript_id == tida[x]),]
-                t.type <- unique(tmp.info$type)
-
-                # exon info
-                tmp <- tmp.info[which(tmp.info$type == "exon"),]
-
-                # check transcript whether has CDS
-                if("CDS" %in% t.type){
-                  tmp2 <- tmp.info[which(tmp.info$type == "CDS"),]
-                  cdslen = sum(tmp2$width)
-                }else{
-                  cdslen = 0
-                }
-
-                # return data.frame
-                tranLength <- data.frame(gname = unique(tg$gene_name),
-                                         gid = unique(tg$gene_id),
-                                         tid = tida[x],
-                                         tlen = sum(tmp$width),
-                                         cdslen = cdslen)
-
-                return(tranLength)
-                }) -> lenInfo
-              # }) %>% do.call("rbind",.) %>% data.frame() -> lenInfo
-
-              # choose type
-              if(selecType == "lt"){
-                rankTran <- lenInfo %>%
-                  dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen))
-              }else if(selecType == "lcds"){
-                rankTran <- lenInfo %>%
-                  dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen))
-              }else{
-                message("Please choose 'lt' or 'lcds'!")
-              }
-
-              # get long name
-              rankTran.name <- getLongName(object = object,transId = rankTran$tid,sep = sep)
-              rankTran$tname <- rankTran.name$tname
-
-              # return length info
-              if(topN == 0){
-                return(rankTran)
-              }else{
-                plyr::ldply(unique(rankTran$gid),function(x){
-                  rankTran <- rankTran[which(rankTran$gid == x),] %>%
-                    dplyr::slice_head(n = as.numeric(topN))
-                  return(rankTran)
-                }) -> rankTran
-                return(rankTran)
-              }
-
-              Sys.sleep(0.05)
-              }) -> rep.info
-            # }) %>% do.call("rbind",.) %>% data.frame() -> rep.info
-
-            return(rep.info)
-          })
->>>>>>> 7eb1588e216cfecccd886a9314e6486e4fc94c9e
-
-
 # getTransInfo
 # calculate CDS absolute start position and stop position for transcript.
 #'Get long name of transcripts in GenomeGTF object
@@ -439,7 +217,7 @@ setMethod("getTransInfo",
               dplyr::mutate(gtype = ifelse(`5UTR` > 0 | `CDS` > 0,"CD","NC")) %>%
               dplyr::mutate(cdsst = ifelse(`gtype` == "CD",`5UTR` + 1,1),
                             cdsed = ifelse(`gtype` == "CD",`cdsst` + `CDS`,exon),
-                            tname = paste(gene_name,gene_id,transcript_id,cdsst,cdsed,exon,gtype,sep = "|"))
+                            tname = paste(gene_name,gene_id,transcript_id,cdsst,cdsed,exon,gtype,sep = sep))
 
             # ===============================================================================
             # filter
@@ -462,35 +240,7 @@ setMethod("getTransInfo",
               }
             }
 
-<<<<<<< HEAD
             return(final.res)
-=======
-              # get CDS length
-              if("CDS" %in% ginfo.s$type){
-                cds.len <- sum(ginfo.s[which(ginfo.s$type == "CDS"),"width"])
-              }else{
-                cds.len <- tlen - 1
-              }
-
-              # get CDS stop position
-              if("5UTR" %in% ginfo.s$type | "five_prime_utr" %in% ginfo.s$type){
-                cds.sp <- cds.len + cds.st - 1
-              }else{
-                if("CDS" %in% ginfo.s$type){
-                  cds.sp <- cds.len + cds.st - 1
-                }else{
-                  cds.sp <- cds.len + cds.st
-                }
-              }
-
-              # name
-              tname <- paste(gname,gid,tid,cds.st,cds.sp,tlen,sep = sep)
-              res <- data.frame(gname = gname,gid = gid,tid = tid,tname = tname)
-              return(res)
-              }) -> resName
-            # }) %>% do.call("rbind",.) %>% data.frame() -> resName
-            return(resName)
->>>>>>> 7eb1588e216cfecccd886a9314e6486e4fc94c9e
           })
 
 
