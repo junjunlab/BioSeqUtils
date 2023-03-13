@@ -4,7 +4,8 @@ globalVariables(c("cdslen", "end", "start", 'tga', "tlen", ".",
                   "sep", "topN", "transId","cdsst","tname",
                   '5UTR', 'CDS', 'exon', 'gene_id', 'gene_name',
                   'gtype', 'transcript_id', 'type', 'typelen',
-                  'width','mytest', 'n', 'seqnames', 'strand'))
+                  'width','mytest', 'n', 'seqnames', 'strand',
+                  'five_prime_utr','if_else','start.tmp','end.tmp'))
 
 # ==============================================================================
 # setGeneric
@@ -60,8 +61,13 @@ setGeneric("getFeatureFromGenome",function(object,...) standardGeneric("getFeatu
 #' @export
 setGeneric("getIntronInfo",function(object,...) standardGeneric("getIntronInfo"))
 
-
-# setGeneric("superExtract",function(object,...) standardGeneric("superExtract"))
+#' getPromoters method for GenomeGTF objects
+#'
+#' @title getPromoters method for GenomeGTF objects
+#' @param object A GenomeGTF object
+#' @param ... Other arguments.
+#' @export
+setGeneric("getPromoters",function(object,...) standardGeneric("getPromoters"))
 
 # ==============================================================================
 # setMethod
@@ -210,14 +216,24 @@ setMethod("getTransInfo",
 
             # ===============================================================================
             # recode
+            # prepare test type
+            test <- ginfo[1:4,] %>% dplyr::mutate(gene_id = "test",
+                                                  transcript_id = "test")
+            test$type <- c("exon","5UTR","CDS","3UTR")
+            ginfo <- rbind(test,ginfo)
+
+            # get info
             leninfo <- ginfo[which(ginfo$type %in% c("exon","5UTR","five_prime_utr","CDS","3UTR","three_prime_utr")),] %>%
+              dplyr::mutate(type = dplyr::if_else(type == "five_prime_utr","5UTR",type)) %>%
+              dplyr::mutate(type = dplyr::if_else(type == "three_prime_utr","3UTR",type)) %>%
               dplyr::group_by(gene_name,gene_id,transcript_id,type) %>%
               dplyr::summarise(typelen = sum(width)) %>%
               tidyr::spread(.,type,typelen,fill = 0) %>%
-              dplyr::mutate(gtype = ifelse(`5UTR` > 0 | `CDS` > 0,"CD","NC")) %>%
-              dplyr::mutate(cdsst = ifelse(`gtype` == "CD",`5UTR` + 1,1),
-                            cdsed = ifelse(`gtype` == "CD",`cdsst` + `CDS`,exon),
-                            tname = paste(gene_name,gene_id,transcript_id,cdsst,cdsed,exon,gtype,sep = sep))
+              dplyr::mutate(gtype = dplyr::if_else(`5UTR` > 0 | `CDS` > 0,"CD","NC")) %>%
+              dplyr::mutate(cdsst = dplyr::if_else(`gtype` == "CD",`5UTR` + 1,1),
+                            cdsed = dplyr::if_else(`gtype` == "CD",`cdsst` + `CDS`,exon),
+                            tname = paste(gene_name,gene_id,transcript_id,cdsst,cdsed,exon,gtype,sep = sep)) %>%
+              dplyr::filter(gene_id != "test")
 
             # ===============================================================================
             # filter
@@ -243,101 +259,6 @@ setMethod("getTransInfo",
             return(final.res)
           })
 
-
-
-# setMethod("superExtract",
-#           signature(object = "GenomeGTF"),
-#           function(object,
-#                    type = c("super.getLongName","super.filterRepTrans"),
-#                    geneName = NULL,geneId = NULL,transId = NULL,
-#                    selecType = c("lcds","lt"),topN = 1,sep = "|",
-#                    ...){
-#             type <- match.arg(type)
-#
-#             # select info
-#             if(!is.null(object@representTrans)){
-#               # load gtf
-#               gtf <- object@representTrans
-#
-#               if(!is.null(geneName) & is.null(geneId) & is.null(transId)){
-#                 ginfo <- gtf[which(gtf$gname %in% geneName),]
-#               }else if(is.null(geneName) & !is.null(geneId) & is.null(transId)){
-#                 ginfo <- gtf[which(gtf$gid %in% geneId),]
-#               }else if(is.null(geneName) & is.null(geneId) & !is.null(transId)){
-#                 ginfo <- gtf[which(gtf$tid %in% transId),]
-#               }else if(!is.null(geneName) & is.null(geneId) & !is.null(transId)){
-#                 ginfo <- gtf[which(gtf$gname == geneName & gtf$tid == transId),]
-#               }else if(is.null(geneName) & !is.null(geneId) & !is.null(transId)){
-#                 ginfo <- gtf[which(gtf$gid == geneId & gtf$tid == transId),]
-#               }else{
-#                 message("Please choose again.")
-#               }
-#
-#               # check type
-#               if(type == "super.getLongName"){
-#                 if(sep != "|"){
-#                   ginfo.sub <- ginfo[,c("gname","gid","tid","tname")] %>%
-#                     dplyr::mutate(tname = gsub(pattern = "\\|",replacement = sep,x = .))
-#                 }else{
-#                   ginfo.sub <- ginfo[,c("gname","gid","tid","tname")]
-#                 }
-#                 return(ginfo.sub)
-#               }else if(type == "super.filterRepTrans"){
-#                 ginfo.sub <- ginfo[,c("gname","gid","tid","tlen","cdslen","tname")]
-#
-#                 # loop
-#                 # plyr::ldply(unique(ginfo.sub$gid),function(x){
-#                 #   tmp <- ginfo.sub[which(ginfo.sub$gid == x),]
-#                 #
-#                 #   # choose type
-#                 #   if(selecType == "lt"){
-#                 #     rankTran <- tmp %>%
-#                 #       dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen))
-#                 #   }else if(selecType == "lcds"){
-#                 #     rankTran <- tmp %>%
-#                 #       dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen))
-#                 #   }else{
-#                 #     message("Please choose 'lt' or 'lcds'!")
-#                 #   }
-#                 #
-#                 #   # return length info
-#                 #   if(topN == 0){
-#                 #     return(rankTran)
-#                 #   }else{
-#                 #     rankTran <- rankTran %>%
-#                 #       dplyr::slice_head(n = as.numeric(topN))
-#                 #     return(rankTran)
-#                 #   }
-#                 # }) %>% data.frame() -> final.res
-#
-              #   if(topN == 0){
-              #     final.res <- ginfo.sub
-              #   }else{
-              #     # choose type
-              #     if(selecType == "lt"){
-              #       final.res <- ginfo.sub %>%
-              #         dplyr::group_by(gname,gid) %>%
-              #         dplyr::arrange(dplyr::desc(tlen),dplyr::desc(cdslen)) %>%
-              #         dplyr::slice_head(n = as.numeric(topN))
-              #     }else if(selecType == "lcds"){
-              #       final.res <- ginfo.sub %>%
-              #         dplyr::group_by(gname,gid) %>%
-              #         dplyr::arrange(dplyr::desc(cdslen),dplyr::desc(tlen)) %>%
-              #         dplyr::slice_head(n = as.numeric(topN))
-              #     }else{
-              #       message("Please choose 'lt' or 'lcds'!")
-              #     }
-              #   }
-              #
-              #   return(final.res)
-              # }else{
-              #   message("Please choose correct type.")
-              # }
-#
-#             }else{
-#               message("representTrans slot is null.")
-#             }
-#           })
 
 # getFeatureFromGenome
 # extract "5UTR","five_prime_utr","3UTR","three_prime_utr","exon","CDS" and
@@ -367,6 +288,8 @@ setMethod("getTransInfo",
 #' "exon", "CDS", or "intron".
 #' @param geneSeq A logical value specifying whether to extract the entire gene
 #' sequence instead of the feature sequence. Default is FALSE.
+#' @param up.extend The extend base for upstream of feature type. Default is 0.
+#' @param dn.extend The extend base for downstream of feature type. Default is 0.
 #'
 #' @importFrom plyr llply
 #' @return A \code{DNAStringSet} object containing the genomic sequences of the
@@ -380,11 +303,17 @@ setMethod("getFeatureFromGenome",
                    sep = "|",
                    geneName = NULL,geneId = NULL,transId = NULL,
                    type = c("5UTR","five_prime_utr","3UTR","three_prime_utr","exon","CDS","intron"),
-                   geneSeq = FALSE){
+                   geneSeq = FALSE,
+                   up.extend = 0,
+                   dn.extend = 0){
             type <- match.arg(type)
 
             # load genome sequences
             genome <- object@genome
+
+            # rename genome chromosome name
+            clean.chrname <- sapply(strsplit(names(mytest@genome),split = " "),"[",1)
+            names(genome) <- clean.chrname
 
             # how to get id
             if(!is.null(nameData)){
@@ -406,7 +335,7 @@ setMethod("getFeatureFromGenome",
               }
 
               # get tids
-              tid <- unique(ginfo$transcript_id)
+              tid <- unique(ginfo$transcript_id) %>% stats::na.omit() %>% as.character()
             }
 
             # getseq function
@@ -420,7 +349,7 @@ setMethod("getFeatureFromGenome",
             }
 
             # filter chromosomes
-            genomeChr <- names(mytest@genome)
+            genomeChr <- names(genome)
             filteredInfo <- ginfo[which(ginfo$seqnames %in% genomeChr),]
 
             # get type info
@@ -450,6 +379,23 @@ setMethod("getFeatureFromGenome",
 
             id <- unique(seqinfo$transcript_id)
 
+            # whether extend tname
+            if(up.extend != 0 | dn.extend != 0){
+              purrr::map_df(1:length(id),function(x){
+                tmp <- seqinfo[which(seqinfo$transcript_id == id[x]),]
+
+                # new cdsst and cds cdsed
+                t.info <- unlist(strsplit(tmp$tname[1],split = paste("\\",sep,sep = "")))
+                cdsst <- as.numeric(t.info[4]) + up.extend
+                cdsed <- as.numeric(t.info[5]) + up.extend
+                exon.len <- as.numeric(t.info[6]) + up.extend + dn.extend
+                new.tname <- paste(t.info[1],t.info[2],t.info[3],cdsst,cdsed,exon.len,t.info[7],sep = sep)
+
+                tmp$tname <- new.tname
+                return(tmp)
+              }) -> seqinfo
+            }
+
             # progress bar
             pb <- progress::progress_bar$new(
               format = 'getFeatureFromGenome is running [:bar] :percent in :elapsed',
@@ -461,6 +407,20 @@ setMethod("getFeatureFromGenome",
             purrr::map(1:length(id),function(x){
               pb$tick()
               tmp <- seqinfo[which(seqinfo$transcript_id == id[x]),]
+
+              # wthether extend sequence
+              if(up.extend != 0 | dn.extend != 0){
+                if(unique(tmp$strand == "+")){
+                  tmp$start[1] <- tmp$start[1] - up.extend
+                  tmp$end[nrow(tmp)] <- tmp$end[nrow(tmp)] + dn.extend
+                }else{
+                  tmp$end[1] <- tmp$end[1] + up.extend
+                  tmp$start[nrow(tmp)] <- tmp$start[nrow(tmp)] - dn.extend
+                }
+
+              }
+
+              # loop
               purrr::map(1:nrow(tmp),function(x){
                 tmp1 <- tmp[x,]
                 getMyseq(genome,tmp1$seqnames,tmp1$start,tmp1$end,tmp1$strand)
@@ -564,3 +524,109 @@ setMethod("getIntronInfo",
             }) -> intronAll.info
             return(intronAll.info)
           })
+
+
+#' Retrieve promoter regions for specified genes or transcripts.
+#'
+#' This method retrieves the promoter regions for specified genes or transcripts
+#' in a GenomeGTF object. The promoter region is defined as the region upstream
+#' of the transcription start site (TSS) of a gene or transcript.
+#'
+#' @param object A GenomeGTF object.
+#' @param geneName A character vector of gene names to retrieve promoter regions for.
+#' @param geneId A character vector of gene IDs to retrieve promoter regions for.
+#' @param transId A character vector of transcript IDs to retrieve promoter regions for.
+#' @param up.extend An integer specifying the number of base pairs upstream of
+#' the TSS to include in the promoter region. Defaults to 2000.
+#' @param dn.extend An integer specifying the number of base pairs downstream of
+#' the TSS to include in the promoter region. Defaults to 0.
+#'
+#' @return A GRanges object containing the promoter regions for the specified genes or transcripts.
+#'
+#' @examples
+#' \dontrun{
+#' # Retrieve promoter regions for gene "TP53" in GenomeGTF object "gtf":
+#' promoters <- getPromoters(gtf, geneName = "TP53")
+#'
+#' # Retrieve promoter regions for gene "BRCA1" and "BRCA2" in GenomeGTF object "gtf":
+#' promoters <- getPromoters(gtf, geneName = c("BRCA1", "BRCA2"), up.extend = 5000)
+#'
+#' # Retrieve promoter regions for transcript "ENST00000311936" in GenomeGTF object "gtf":
+#' promoters <- getPromoters(gtf, transId = "ENST00000311936", up.extend = 1000, dn.extend = 1000)
+#' }
+#' @export
+setMethod("getPromoters",
+          signature(object = "GenomeGTF"),
+          function(object,
+                   geneName = NULL,geneId = NULL,transId = NULL,
+                   up.extend = 2000,
+                   dn.extend = 0){
+            # load genome sequences
+            genome <- object@genome
+
+            # rename genome chromosome name
+            clean.chrname <- sapply(strsplit(names(mytest@genome),split = " "),"[",1)
+            names(genome) <- clean.chrname
+
+            # get info
+            ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = transId)
+
+            # get tids
+            tid <- unique(ginfo$transcript_id) %>% stats::na.omit() %>% as.character()
+
+            # getseq function
+            getMyseq <- function(genome,chr,start,end,strand){
+              if(strand == "+"){
+                seq <- genome[[chr]][start:end]
+              }else{
+                seq <- Biostrings::reverseComplement(genome[[chr]][start:end])
+              }
+              return(as.character(seq))
+            }
+
+            # filter chromosomes
+            genomeChr <- names(genome)
+            filteredInfo <- ginfo[which(ginfo$seqnames %in% genomeChr),]
+
+            # get type info
+            seqinfo.tmp <- filteredInfo[which(filteredInfo$type %in% c("transcript","mRNA")),] %>%
+              dplyr::mutate(start.tmp = start,end.tmp = end) %>%
+              dplyr::mutate(start = dplyr::if_else(strand == "+",start.tmp - up.extend,end.tmp - dn.extend),
+                            end = dplyr::if_else(strand == "+",start.tmp + dn.extend,end.tmp + up.extend)) %>%
+              dplyr::select(-c(start.tmp,end.tmp))
+
+            # tname
+            all.res <- getTransInfo(object = object,transId = unique(filteredInfo$transcript_id),topN = 0) %>%
+              dplyr::ungroup() %>%
+              dplyr::select(transcript_id,tname)
+
+            # merge
+            seqinfo <- suppressMessages(dplyr::left_join(seqinfo.tmp,all.res) %>%
+                                          dplyr::mutate(tname = paste(tname,up.extend,"TSS",dn.extend,sep = "|")))
+
+            id <- unique(seqinfo$transcript_id)
+
+            # progress bar
+            pb <- progress::progress_bar$new(
+              format = 'getFeatureFromGenome is running [:bar] :percent in :elapsed',
+              total = length(id), clear = FALSE, width = 80
+            )
+
+            # loop
+            purrr::map(1:nrow(seqinfo),function(x){
+              pb$tick()
+              tmp1 <- seqinfo[x,]
+              seq <- getMyseq(genome,tmp1$seqnames,tmp1$start,tmp1$end,tmp1$strand)
+              return(seq)
+              Sys.sleep(0.05)
+            }) -> seqlist
+
+            # seq <- paste0(seqlist,collapse = "")
+            names(seqlist) <- unique(seqinfo$tname)
+
+            # to DNAStringSet
+            res.seq <- Biostrings::DNAStringSet(unlist(seqlist))
+            return(res.seq)
+
+          })
+

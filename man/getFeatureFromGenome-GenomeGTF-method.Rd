@@ -12,7 +12,9 @@
   geneId = NULL,
   transId = NULL,
   type = c("5UTR", "five_prime_utr", "3UTR", "three_prime_utr", "exon", "CDS", "intron"),
-  geneSeq = FALSE
+  geneSeq = FALSE,
+  up.extend = 0,
+  dn.extend = 0
 )
 }
 \arguments{
@@ -41,6 +43,10 @@ extracted. Can be one of "5UTR", "five_prime_utr", "3UTR", "three_prime_utr",
 
 \item{geneSeq}{A logical value specifying whether to extract the entire gene
 sequence instead of the feature sequence. Default is FALSE.}
+
+\item{up.extend}{The extend base for upstream of feature type. Default is 0.}
+
+\item{dn.extend}{The extend base for downstream of feature type. Default is 0.}
 }
 \value{
 A \code{DNAStringSet} object containing the genomic sequences of the
