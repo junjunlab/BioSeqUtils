@@ -591,8 +591,8 @@ setMethod("getPromoters",
             # get type info
             seqinfo.tmp <- filteredInfo[which(filteredInfo$type %in% c("transcript","mRNA")),] %>%
               dplyr::mutate(start.tmp = start,end.tmp = end) %>%
-              dplyr::mutate(start = dplyr::if_else(strand == "+",start.tmp - up.extend,end.tmp - dn.extend),
-                            end = dplyr::if_else(strand == "+",start.tmp + dn.extend,end.tmp + up.extend)) %>%
+              dplyr::mutate(start = dplyr::if_else(strand == "+",start.tmp - up.extend,end.tmp + 1 - dn.extend),
+                            end = dplyr::if_else(strand == "+",start.tmp - 1 + dn.extend,end.tmp + up.extend)) %>%
               dplyr::select(-c(start.tmp,end.tmp))
 
             # tname
