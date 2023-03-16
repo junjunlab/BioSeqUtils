@@ -4,7 +4,7 @@
 \alias{getNonRedundantLength,GenomeGTF-method}
 \title{Get the non-redundant length of transcripts for gene}
 \usage{
-\S4method{getNonRedundantLength}{GenomeGTF}(object, geneName = NULL, geneId = NULL)
+\S4method{getNonRedundantLength}{GenomeGTF}(object, geneName = NULL, geneId = NULL, type = "exon")
 }
 \arguments{
 \item{object}{A GenomeGTF object.}
@@ -14,6 +14,8 @@ to retrieve the non-redundant length of transcripts. If NULL, the function will 
 
 \item{geneId}{A character string specifying the ID of the gene for which to
 retrieve the non-redundant length of transcripts. If NULL, the function will use geneName instead.}
+
+\item{type}{The feature type selected to calculate. Default "exon".}
 }
 \value{
 A data frame for gene with non-redundant length.

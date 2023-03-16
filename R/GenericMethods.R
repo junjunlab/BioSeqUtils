@@ -650,6 +650,7 @@ setMethod("getPromoters",
 #' to retrieve the non-redundant length of transcripts. If NULL, the function will use geneId instead.
 #' @param geneId A character string specifying the ID of the gene for which to
 #' retrieve the non-redundant length of transcripts. If NULL, the function will use geneName instead.
+#' @param type The feature type selected to calculate. Default "exon".
 #'
 #' @return A data frame for gene with non-redundant length.
 #'
@@ -663,7 +664,8 @@ setMethod("getPromoters",
 setMethod("getNonRedundantLength",
           signature(object = "GenomeGTF"),
           function(object,
-                   geneName = NULL,geneId = NULL){
+                   geneName = NULL,geneId = NULL,
+                   type = "exon"){
             # get info
             ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = NULL)
 
@@ -679,7 +681,7 @@ setMethod("getNonRedundantLength",
             plyr::ldply(seq_along(gid), function(x){
               pb$tick()
               # filter exon
-              tmp <- ginfo[which(ginfo$gene_id == gid[x] & ginfo$type == 'exon'),]
+              tmp <- ginfo[which(ginfo$gene_id == gid[x] & ginfo$type %in% type),]
               # union on exons
               fields = c()
               # loop
