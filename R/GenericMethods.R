@@ -69,6 +69,14 @@ setGeneric("getIntronInfo",function(object,...) standardGeneric("getIntronInfo")
 #' @export
 setGeneric("getPromoters",function(object,...) standardGeneric("getPromoters"))
 
+
+#' getNonRedundantLength method for GenomeGTF objects
+#'
+#' @title getNonRedundantLength method for GenomeGTF objects
+#' @param object A GenomeGTF object
+#' @param ... Other arguments.
+#' @export
+setGeneric("getNonRedundantLength",function(object,...) standardGeneric("getNonRedundantLength"))
 # ==============================================================================
 # setMethod
 # ==============================================================================
@@ -83,14 +91,14 @@ setMethod("show",
               cat(paste0("## GTF path: ",object@gtfPath,".\n",collapse = ""))
             }
 
-            if(is.null(object@genome)){
+            if(length(object@genome) == 0){
               cat("## genome file is NULL.\n")
             }else{
               cat("## genome file is loaded.\n")
               cat(paste0("## Genome path: ",object@genomePath,".\n",collapse = ""))
             }
 
-            if(is.null(object@representTrans)){
+            if(length(object@representTrans) == 0){
               cat("## representTrans file is NULL.\n")
             }else{
               cat("## representTrans file is loaded.\n")
@@ -124,13 +132,13 @@ setMethod("myShow",
               cat("## GTF file is loaded.\n")
             }
 
-            if(is.null(object@genome)){
+            if(length(object@genome) == 0){
               cat("## genome file is NULL.\n")
             }else{
               cat("## genome file is loaded.\n")
             }
 
-            if(is.null(object@representTrans)){
+            if(length(object@representTrans) == 0){
               cat("## representTrans file is NULL.\n")
             }else{
               cat("## representTrans file is loaded.\n")
@@ -432,7 +440,7 @@ setMethod("getFeatureFromGenome",
                 seq <- paste0(seqlist,collapse = "")
               }
 
-              Sys.sleep(0.05)
+              Sys.sleep(0.000001)
               return(seq)
             }) -> alllist
 
@@ -520,7 +528,7 @@ setMethod("getIntronInfo",
                 return(intron.info)
               }
 
-              Sys.sleep(0.05)
+              Sys.sleep(0.000001)
             }) -> intronAll.info
             return(intronAll.info)
           })
@@ -608,7 +616,7 @@ setMethod("getPromoters",
 
             # progress bar
             pb <- progress::progress_bar$new(
-              format = 'getFeatureFromGenome is running [:bar] :percent in :elapsed',
+              format = 'getPromoters is running [:bar] :percent in :elapsed',
               total = length(id), clear = FALSE, width = 80
             )
 
@@ -618,7 +626,7 @@ setMethod("getPromoters",
               tmp1 <- seqinfo[x,]
               seq <- getMyseq(genome,tmp1$seqnames,tmp1$start,tmp1$end,tmp1$strand)
               return(seq)
-              Sys.sleep(0.05)
+              Sys.sleep(0.000001)
             }) -> seqlist
 
             # seq <- paste0(seqlist,collapse = "")
@@ -630,3 +638,64 @@ setMethod("getPromoters",
 
           })
 
+
+
+#' Get the non-redundant length of transcripts for gene
+#'
+#' This function returns the non-redundant length of transcripts for a specific
+#' gene based on the information
+#'
+#' @param object A GenomeGTF object.
+#' @param geneName A character string specifying the name of the gene for which
+#' to retrieve the non-redundant length of transcripts. If NULL, the function will use geneId instead.
+#' @param geneId A character string specifying the ID of the gene for which to
+#' retrieve the non-redundant length of transcripts. If NULL, the function will use geneName instead.
+#'
+#' @return A data frame for gene with non-redundant length.
+#'
+#' @examples
+#' \dontrun{
+#' # get the non-redundant length of transcripts for gene "ENSG00000139618"
+#' getNonRedundantLength(GenomeGTFobject, geneId = "ENSG00000139618")
+#' }
+#'
+#' @export
+setMethod("getNonRedundantLength",
+          signature(object = "GenomeGTF"),
+          function(object,
+                   geneName = NULL,geneId = NULL){
+            # get info
+            ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = NULL)
+
+            gid <- unique(ginfo$gene_id)
+
+            # progress bar
+            pb <- progress::progress_bar$new(
+              format = 'getNonRedundantLength is running [:bar] :percent in :elapsed',
+              total = length(gid), clear = FALSE, width = 80
+            )
+
+            # loop
+            plyr::ldply(seq_along(gid), function(x){
+              pb$tick()
+              # filter exon
+              tmp <- ginfo[which(ginfo$gene_id == gid[x] & ginfo$type == 'exon'),]
+              # union on exons
+              fields = c()
+              # loop
+              for (j in 1:nrow(tmp)) {
+                fields <- union(fields,tmp$start[j]:tmp$end[j])
+              }
+              # save length
+              GneneLenth = length(fields)
+              gene_name = tmp$gene_name[1]
+
+              # combine
+              res <- data.frame(gene_name = gene_name,
+                                gene_id = gid[x],
+                                exonLength = GneneLenth)
+
+              Sys.sleep(0.000001)
+              return(res)
+            })  -> final_res
+          })

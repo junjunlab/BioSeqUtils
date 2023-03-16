@@ -59,7 +59,12 @@ loadGenomeGTF <- function(gtfPath = NULL,
   # as.data.frame()
 
   # load genome sequences
-  myFASTA <- Biostrings::readDNAStringSet(genomePath,format = "fasta")
+  if(!is.null(genomePath)){
+    myFASTA <- Biostrings::readDNAStringSet(genomePath,format = "fasta")
+  }else{
+    genomePath = ""
+    myFASTA = Biostrings::DNAStringSet(NULL)
+  }
 
   # whether get protein
   if(filterProtein == TRUE){
