@@ -11,7 +11,8 @@
   transId = NULL,
   selecType = c("lcds", "lt"),
   topN = 1,
-  sep = "|"
+  sep = "|",
+  filterGene = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,10 @@ is "lcds".}
 Default is 1. Set to 0 to retain all transcripts.}
 
 \item{sep}{Separator character to use in the long name. Default is "|".}
+
+\item{filterGene}{whether filter the genes which not in genome file chromosomes.
+Default is FALSE. This is useful when you extarct sequnence from genome file after
+setting it to TRUE.}
 }
 \value{
 A data frame.

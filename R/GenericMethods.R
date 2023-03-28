@@ -207,6 +207,9 @@ setMethod("filterID",
 #' @param topN An integer indicating the number of longest transcripts to retain.
 #' Default is 1. Set to 0 to retain all transcripts.
 #' @param sep Separator character to use in the long name. Default is "|".
+#' @param filterGene whether filter the genes which not in genome file chromosomes.
+#' Default is FALSE. This is useful when you extarct sequnence from genome file after
+#' setting it to TRUE.
 #'
 #' @return A data frame.
 #'
@@ -218,10 +221,17 @@ setMethod("getTransInfo",
           function(object,
                    geneName = NULL,geneId = NULL,transId = NULL,
                    selecType = c("lcds","lt"),
-                   topN = 1,sep = "|"){
+                   topN = 1,sep = "|",
+                   filterGene = FALSE){
             # load GTF
             ginfo <- filterID(object = object,geneName = geneName,geneId = geneId,transId = transId)
 
+            # whether filter gene not in genome file chromosomes
+            if(filterGene == TRUE){
+              chrName <- names(object@genome)
+              ginfo <- ginfo %>%
+                dplyr::filter(seqnames %in% chrName)
+            }
             # ===============================================================================
             # recode
             # prepare test type
