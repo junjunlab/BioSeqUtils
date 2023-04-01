@@ -16,12 +16,16 @@ Imports:
     Biostrings,
     dplyr,
     GenomicRanges,
+    ggnewscale,
+    ggplot2,
     magrittr,
     methods,
     plyr,
     progress,
     reticulate,
-    rtracklayer
+    rtracklayer,
+    tibble,
+    tidyr
 biocViews: Biostrings GenomicRanges rtracklayer
 Depends: 
     R (>= 2.10)

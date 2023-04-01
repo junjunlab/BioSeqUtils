@@ -4,17 +4,24 @@
 \alias{getGeneDensiy}
 \title{Get gene density data for karyotype object}
 \usage{
-getGeneDensiy(karyotype = NULL, object = NULL, step = 2 * 10^6)
+getGeneDensiy(
+  karyotype = NULL,
+  gtf = NULL,
+  feature = "transcript",
+  step = 5 * 10^6
+)
 }
 \arguments{
 \item{karyotype}{A data frame with three columns: chr, start, and end. The
 columns represent the chromosome number, start position and end position of
 the chromosome, respectively.}
 
-\item{object}{A character which contains the path of a gtf file.}
+\item{gtf}{A character which contains the path of a gtf file.}
+
+\item{feature}{The feature to be extracted for density calculation, default "transcript".}
 
 \item{step}{A numerical value which represents the length of each segmentation,
-default is 1,000,000bp.}
+default is 5,000,000bp.}
 }
 \value{
 a data frame which contains four columns: chr, start, end, and numGenes.
