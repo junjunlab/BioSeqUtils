@@ -3,7 +3,7 @@
 
 <!-- badges: start -->
 
-Here supply this BioSeqUtils R package to extract different features sequence of gene/transcript from your local genome and annotation files. Besides there are many other tools for you to achive this. Any question or advice can be pushed on github [**Issues**](https://github.com/junjunlab/BioSeqUtils/issues) panel.
+Here supply this BioSeqUtils R package to extract different features ***(UTR, exon, CDS, intron, gene)*** sequence of gene/transcript from your local genome and annotation files in R. Besides there are many other tools for you to achive this. Also supply other useful functions to do other interesting things. Any question or advice can be pushed on github [**Issues**](https://github.com/junjunlab/BioSeqUtils/issues) panel.
 
 <!-- badges: end -->
 
