@@ -5,6 +5,7 @@
 \title{Draw Chromosome Karyotype Plot}
 \usage{
 drawChromosome(
+  ideogram_obj = NULL,
   karyotype_file = NULL,
   centromereTri_file = NULL,
   density_file = NULL,
@@ -16,12 +17,14 @@ drawChromosome(
   zoom_pos = "top",
   zoom_col = c("grey95", "grey60"),
   zoom_relheight = 1,
-  facet_params = list(ncol = 1, scales = "free_x", strip_position = "right"),
+  facet_params = list(),
   add_regionLen = TRUE,
   ...
 )
 }
 \arguments{
+\item{ideogram_obj}{The output for "catchIdeoData" function.}
+
 \item{karyotype_file}{Path to the karyotype file. The file is expected to be
 in tab-delimited format with columns chr, start, end, and name representing
 chromosome name, start and end positions, and chromosome band name respectively.}

@@ -3,7 +3,7 @@ globalVariables(c("all_karyotype","ce_end","ce_start","aes", "arrow", "chr",
                   "geom_polygon", "geom_rect", "geom_text", "karyotype_df",
                   "label", "numGenes", "scale_fill_gradient", "segy", "start.x",
                   "theme", "theme_bw", "unit", "x", "xlab", "y", "ylab",
-                  "PositionIdentity", "StatIdentity", "layer"))
+                  "PositionIdentity", "StatIdentity", "layer","density"))
 
 #' Get chromosome sizes from a genome object
 #'
@@ -323,6 +323,67 @@ createSegment <- function(xPos = NULL,
 }
 
 
+#' Create a Pair of Polygons
+#'
+#' This function creates a pair of polygons, each consisting of two line segments,
+#' with a shared mid-point and a user-defined start and end point.
+#'
+#' @param start A numeric value indicating the start point of the polygon.
+#' Defaults to NULL.
+#' @param end A numeric value indicating the end point of the polygon. Defaults
+#' to NULL.
+#' @param open A numeric value indicating the openness of the polygon. Defaults
+#' to 1.
+#' @param npoints An integer value indicating the number of points to be used to
+#' construct the polygon. Defaults to 1000.
+#' @param reverse A logical value indicating whether to reverse the order of the
+#' polygons.
+#'
+#' @return A data.frame object containing the x and y coordinates of the two
+#' polygons and the type of polygon.
+#'
+#' @examples
+#' createPairPolygon(start = 0, end = 10, open = 1, npoints = 1000, reverse = FALSE)
+#'
+#' @export
+createPairPolygon <- function(start = NULL,
+                              end = NULL,
+                              open = 1,
+                              npoints = 1000,
+                              reverse = FALSE){
+  mid = (start + end)/2
+  interval_1 = seq(start,mid,length.out = npoints)
+
+  # check start+end = 0
+  if(mid == 0){
+    y_interval = abs(seq(0,sum(abs(start) + abs(end))/2,
+                         length.out = npoints))
+  }else{
+    y_interval = seq(0,mid,length.out = npoints)
+  }
+
+  ratio = sqrt(abs(max(y_interval))/2)
+  x = c(interval_1,rev(interval_1))
+  y = c(-(sqrt(abs(rev(y_interval)/2))*open),
+        sqrt(abs(y_interval)/2)*open)/ratio
+
+
+  interval_2 = seq(mid,end,length.out = npoints)
+  x1 = c(rev(interval_2),interval_2)
+  y1 = y
+
+  if(reverse == TRUE){
+    ypos = c(x1,x);xpos = c(y,y1)
+  }else{
+    xpos = c(x1,x);ypos = c(y,y1)
+  }
+
+  res <- data.frame(xpos = xpos,ypos = ypos,
+                    type = rep(c(1,2),each = length(x)))
+}
+
+
+
 #' Add a custom annotation layer to a ggplot
 #'
 #' This function adds a custom annotation layer to a ggplot using the provided grob object.
@@ -343,6 +404,11 @@ annotation_custom2 <- function (grob, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax
                                           xmin = xmin, xmax = xmax,
                                           ymin = ymin, ymax = ymax))
 }
+
+
+# =========================================================================================
+# test data
+# =========================================================================================
 
 #' This is a test data for this package
 #' test data describtion
