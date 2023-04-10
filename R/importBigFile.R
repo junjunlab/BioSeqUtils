@@ -1,3 +1,5 @@
+globalVariables(c("fileName","value","xp","yp"))
+
 #' Load BED files and create a data frame
 #'
 #' This function takes one or more BED files and reads them into a data frame
@@ -93,4 +95,161 @@ loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL){
     return(tmp)
   }) -> bWData
   return(bWData)
+}
+
+
+#' Prepare Hi-C data for analysis
+#'
+#' This function prepares Hi-C data for downstream analysis by either reading
+#' in Hi-C data files or using pre-loaded data.
+#'
+#' @param hic_path character vector specifying the path(s) to Hi-C data file(s).
+#' @param readHic_params list of parameters to be passed to the
+#' \code{\link[plotgardener]{readHic}} function, which is used to read in Hi-C
+#' data files. See the documentation for \code{\link[plotgardener]{readHic}} for
+#' more information.
+#' @param data data frame containing Hi-C data. This parameter is used if Hi-C
+#' data has already been loaded and does not need to be read in from file(s).
+#' @param file_name character vector specifying the file name(s) associated with
+#' the Hi-C data file(s).
+#' @param assembly character vector specifying the assembly(ies) of the Hi-C data.
+#' @param chrom character vector specifying the chromosome(s) of the Hi-C data.
+#' @param chromstart numeric vector specifying the start position(s) of the Hi-C data.
+#' @param chromend numeric vector specifying the end position(s) of the Hi-C data.
+#' @param resolution numeric vector specifying the resolution(s) of the Hi-C data.
+#'
+#' @return a data frame containing the prepared Hi-C data.
+#'
+#' @examples
+#' \dontrun{
+#' prepareHic(hic_path = "my_hic_file.hic", assembly = "hg38", chrom = "chr1", resolution = 5000)
+#' }
+#'
+#' @importFrom plotgardener readHic
+#' @importFrom plyr ldply
+#' @import dplyr
+#' @import tidyr
+#' @export
+prepareHic <- function(hic_path = NULL,readHic_params = list(),
+                       data = NULL,file_name = NULL,assembly = NULL,
+                       chrom = NULL,chromstart = NULL,chromend = NULL,
+                       resolution = NULL){
+  time_n = max(length(file_name),length(data))
+  if(length(chrom) == 1) chrom = rep(chrom,time_n)
+  if(length(resolution) == 1) resolution = rep(resolution,time_n)
+  if(length(assembly) == 1) assembly = rep(assembly,time_n)
+
+  if(!is.null(chromstart) & !is.null(chromend)){
+    if(length(chromstart) == 1) chromstart = rep(chromstart,time_n)
+    if(length(chromend) == 1) chromend = rep(chromend,time_n)
+  }
+
+  # read hic data
+  if(!is.null(hic_path)){
+    # x = 1
+    hic_data <- lapply(seq_along(hic_path), function(x){
+      if(!is.null(chromstart) & !is.null(chromend)){
+        readHic_list <- list(file = hic_path[x],
+                             chrom = chrom[x],
+                             chromstart = chromstart[x],
+                             chromend = chromend [x],
+                             assembly = assembly[x],
+                             resolution = resolution[x])
+      }else{
+        readHic_list <- list(file = hic_path[x],
+                             chrom = chrom[x],
+                             assembly = assembly[x],
+                             resolution = resolution[x])
+      }
+
+      tmp <- do.call(plotgardener::readHic,modifyList(readHic_list,readHic_params))
+      return(tmp)
+    })
+  }else{
+    hic_data <- data
+  }
+
+  # x = 1
+  plyr::ldply(1:length(hic_data),function(x){
+    colnames(hic_data[[x]]) <- c('x','y','count')
+    tmp <- getRotatedPolygon(data = hic_data[[x]],rx = 'x',ry = 'y',
+                             value = 'count',workers = 1,
+                             window = resolution[x])$polygon_coods
+    tmp <- tmp %>% mutate(seqnames = paste("chr",chrom[x],sep = ""),
+                          fileName = file_name[x]) %>%
+      # mutate(value = paste(value,id,sep = "|")) %>%
+      select(seqnames,xp,yp,value,fileName,id)
+    colnames(tmp)[2:5] <- c("start","end","score","fileName")
+
+    return(tmp)
+  }) -> hicdf
+}
+
+
+#' Load loop data from bed or bedpe format files
+#'
+#' This function loads loop data from bed or bedpe format files and returns them
+#' as a data frame.
+#'
+#' @param loop_file a character vector of file names to be loaded.
+#' @param file_name a character vector of corresponding names to the file names
+#' in \code{loop_file},or \code{NULL} to use the file names themselves as the
+#' names of the output data frames.
+#' @param sep the separator used in the input files.
+#'
+#' @return a data frame containing the loop data. The columns of the data frame
+#' are as follows:
+#' \itemize{
+#' \item \code{seqnames}: chromosome names of the interacting regions;
+#' \item \code{start}: mid-point of the first region;
+#' \item \code{end}: mid-point of the second region;
+#' \item \code{score}: a score calculated as the distance between the start and end positions
+#' of the interacting regions divided by 100,000;
+#' \item \code{fileName}: the name of the input file from which the loop data were extracted.
+#' }
+#'
+#' @importFrom utils read.table
+#'
+#' @examples
+#' \dontrun{
+#' loop_data <- loadloops(loop_file = c("loop1.bedpe", "loop2.bedpe"),
+#' file_name = c("loop1", "loop2"),sep = "\t")
+#' }
+#'
+#' @export
+loadloops <- function(loop_file = NULL,
+                      file_name = NULL,
+                      sep = "\t"){
+  plyr::ldply(1:length(loop_file),function(x){
+    # read in
+    bedpe <- read.table(loop_file[x],sep = sep,header = FALSE)
+
+    # filename
+    if(is.null(file_name)){
+      fn <- loop_file[x]
+    }else{
+      fn <- file_name[x]
+    }
+
+    # check length
+    if(ncol(bedpe) >= 6){
+      bedpe <- bedpe[,1:6]
+      colnames(bedpe) <- c("chrom1","start1","end1","chrom2","start2","end2")
+
+      # return
+      bedpe_df <- data.frame(seqnames = bedpe$chrom1,
+                             start = (bedpe$start1 + bedpe$end1)/2,
+                             end = (bedpe$start2 + bedpe$end2)/2,
+                             score = (bedpe$end2 - bedpe$start1)/10^5,
+                             fileName = fn)
+    }else if(ncol(bedpe) == 3){
+      bedpe_df <- bedpe
+      bedpe_df$fileName <- fn
+    }else{
+      message("Please supply three columns bed or bedpe format data.")
+      # break()
+    }
+    return(bedpe_df)
+  }) -> loop_data
+  return(loop_data)
 }

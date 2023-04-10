@@ -406,6 +406,75 @@ annotation_custom2 <- function (grob, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax
 }
 
 
+#' getRotatedPolygon
+#'
+#' This function rotates a polygon based on a given angle and returns the rotated
+#' coordinates along with a polygon of a given window size around the rotated polygon.
+#'
+#' @param data A data frame containing the original polygon coordinates.
+#' @param rx The column name of the x-coordinates in the \code{data} parameter.
+#' @param ry The column name of the y-coordinates in the \code{data} parameter.
+#' @param value The column name of the values associated with each point in the polygon.
+#' @param theta The angle in degrees to rotate the polygon.
+#' @param workers The number of cores to use for parallel processing. Default is 1.
+#' @param window The size of the window around the rotated polygon. Can be a numeric
+#' value or the name of a column in the \code{data} parameter. Default is 1.
+#'
+#' @return A list containing the rotated coordinates and the polygon coordinates.
+#'
+#' @export
+getRotatedPolygon <- function(data = NULL, rx = NULL, ry = NULL,
+                              value = NULL,theta = 45, workers = 1,
+                              window = 1) {
+  # Convert theta to radians
+  theta_rad <- pi * (theta / 180)
+
+  # Set a "plan" for how the code should run.
+  # future::plan(future::multisession, workers = workers)
+
+  # Vectorize the operations
+  data$x <- data[[rx]]
+  data$y <- data[[ry]]
+  data$xr <- data$x * cos(theta_rad) + data$y * sin(theta_rad)
+  data$yr <- data$y * cos(theta_rad) - data$x * sin(theta_rad)
+  data$xr <- data$xr * cos(theta_rad)
+  data$yr <- data$yr * sin(theta_rad)
+
+  data$yr <- round(data$yr,digits = 1)
+  # Combine the results
+  rotated_coods <- furrr::future_map_dfc(data, identity)
+
+  # ============================================================================
+  # check window size
+  if(is.numeric(window)){
+    window_size = window*0.5
+  }else if(is.character(window)){
+    window_size = rotated_coods[[window]]*0.5
+  }else{
+    message("please supply column name or numeric value!")
+  }
+
+  # get cordinates
+  polygon_x <- cbind(rotated_coods$xr - window_size, rotated_coods$xr,
+                     rotated_coods$xr + window_size, rotated_coods$xr)
+  polygon_y <- cbind(rotated_coods$yr, rotated_coods$yr + window_size,
+                     rotated_coods$yr, rotated_coods$yr - window_size)
+  polygon_id <- rep(1:nrow(rotated_coods), 4)
+  polygon_value <- rep(rotated_coods[[value]], 4)
+
+  # polygon coords
+  polygon_coods <- data.frame(xp = as.vector(polygon_x),
+                              yp = as.vector(polygon_y),
+                              id = polygon_id,
+                              value = polygon_value)
+
+  # ============================================================================
+  # output
+  return(list(rotated_coods = rotated_coods,
+              polygon_coods = polygon_coods))
+}
+
+
 # =========================================================================================
 # test data
 # =========================================================================================
