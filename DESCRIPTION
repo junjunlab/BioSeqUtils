@@ -1,6 +1,6 @@
 Package: BioSeqUtils
 Title: Extract Sequence of Different Features From Annotation and Genome File
-Version: 0.0.3
+Version: 0.0.4
 Maintainer: Jun Zhang <3219030654@stu.cpu.edu.cn>
 Authors@R: 
     person("Jun", "Zhang", , "3219030654@stu.cpu.edu.cn", role = c("aut", "cre"),
@@ -14,22 +14,36 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports: 
     Biostrings,
+    data.table,
+    DescTools,
     dplyr,
     furrr,
     GenomicRanges,
+    ggbio,
+    ggh4x,
     ggnewscale,
     ggplot2,
+    ggrepel,
+    HiCcompare,
+    jjAnno,
     magrittr,
+    megadepth,
     methods,
     plotgardener,
     plyr,
     plyranges,
     progress,
+    purrr,
+    RColorBrewer,
     reticulate,
+    rhdf5,
     rtracklayer,
+    scales,
     tibble,
-    tidyr
-biocViews: Biostrings GenomicRanges rtracklayer plotgardener
+    tidyr,
+    utils,
+    zplyr
+biocViews: Biostrings GenomicRanges rtracklayer plotgardener megadepth ggbio
 Depends: 
     R (>= 2.10)
 LazyData: true

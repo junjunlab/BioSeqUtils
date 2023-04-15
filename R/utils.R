@@ -475,6 +475,94 @@ getRotatedPolygon <- function(data = NULL, rx = NULL, ry = NULL,
 }
 
 
+#' Convert and transform coordinates of genomic features in a GTF file
+#'
+#' This function takes a GTF file as input and converts the coordinates of
+#' genomic features to transcript coordinates. It also reassigns the start and
+#' end coordinates for exons, as well as for coding regions (CDS).
+#'
+#' @param gtf_file A data frame object with at least the columns "transcript_id",
+#' "type", "strand", "start", "end", and "width".
+#'
+#' @return A data frame with the same columns as \code{gtf_file}, where the
+#' coordinates of features are in transcript space.
+#'
+#' @examples
+#' \dontrun{
+#' # Run function
+#' transCoordTransform(gtf_file = example_gtf)
+#' }
+#'
+#' @export
+transCoordTransform <- function(gtf_file = NULL){
+  tid <- unique(gtf_file$transcript_id)
+
+  # x = 1
+  plyr::ldply(seq_along(tid),
+              .parallel = TRUE,
+              function(x){
+                tmp <- gtf_file[which(gtf_file$transcript_id %in% tid[x]),]
+
+                # params
+                feature <- unique(tmp$type)
+                strand <- unique(tmp$strand)
+                trans_len <- sum(tmp[which(tmp$type == "exon"),"width"])
+
+                # order
+                if(strand == "+"){
+                  tmp <- tmp %>% arrange(start,end)
+                }else{
+                  tmp <- tmp %>% arrange(-start,-end)
+                }
+
+                # re-assign transcript coord
+                transcript_tmp <- tmp[which(tmp$type == "transcript"),] %>%
+                  mutate(start = 1,end = trans_len)
+
+                # re-assign coord for "exon" and "CDS/3UTR/5UTR"
+                # for exon
+                exon_tmp <- tmp[which(tmp$type == "exon"),]
+                exon_len <- cumsum(exon_tmp$width)
+                new_start <- c(0,exon_len[1:(length(exon_len) - 1)]) + 1
+
+                # check whether only one feature
+                if(nrow(exon_tmp) == 1){
+                  exon_tmp$start <- new_start[1]
+                  exon_tmp$end <- exon_len
+                }else{
+                  exon_tmp$start <- new_start
+                  exon_tmp$end <- exon_len
+                }
+
+                # for CDS
+                if("CDS" %in% feature){
+                  coding_tmp <- tmp[which(tmp$type %in% c("5UTR","five_prime_utr",
+                                                          "CDS",
+                                                          "3UTR","three_prime_utr")),]
+                  exon_len <- cumsum(coding_tmp$width)
+                  new_start <- c(0,exon_len[1:(length(exon_len) - 1)]) + 1
+
+                  if(nrow(exon_tmp) == 1){
+                    coding_tmp$start <- new_start[1]
+                    coding_tmp$end <- exon_len
+                  }else{
+                    coding_tmp$start <- new_start
+                    coding_tmp$end <- exon_len
+                  }
+                }else{
+                  coding_tmp <- NULL
+                }
+
+                # combine data
+                fina_res <- rbind(transcript_tmp,exon_tmp,coding_tmp)
+
+                return(fina_res)
+              }) -> trans_gtf
+  return(trans_gtf)
+}
+
+
+
 # =========================================================================================
 # test data
 # =========================================================================================

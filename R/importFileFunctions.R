@@ -1,4 +1,4 @@
-globalVariables(c("fileName","value","xp","yp"))
+globalVariables(c("fileName","value","xp","yp",":=",".N"))
 
 #' Load BED files and create a data frame
 #'
@@ -78,7 +78,7 @@ loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL){
                           data.frame() %>%
                           plyranges::select(-width,-strand))
     }else{
-      tmp <- data.frame(tmp)
+      tmp <- data.frame(tmp) %>% plyranges::select(-width,-strand)
     }
 
     # sampe name
@@ -134,7 +134,7 @@ prepareHic <- function(hic_path = NULL,readHic_params = list(),
                        data = NULL,file_name = NULL,assembly = NULL,
                        chrom = NULL,chromstart = NULL,chromend = NULL,
                        resolution = NULL){
-  time_n = max(length(file_name),length(data))
+  time_n = max(length(file_name),length(data),length(hic_path))
   if(length(chrom) == 1) chrom = rep(chrom,time_n)
   if(length(resolution) == 1) resolution = rep(resolution,time_n)
   if(length(assembly) == 1) assembly = rep(assembly,time_n)
@@ -146,25 +146,56 @@ prepareHic <- function(hic_path = NULL,readHic_params = list(),
 
   # read hic data
   if(!is.null(hic_path)){
-    # x = 1
-    hic_data <- lapply(seq_along(hic_path), function(x){
-      if(!is.null(chromstart) & !is.null(chromend)){
-        readHic_list <- list(file = hic_path[x],
-                             chrom = chrom[x],
-                             chromstart = chromstart[x],
-                             chromend = chromend [x],
-                             assembly = assembly[x],
-                             resolution = resolution[x])
-      }else{
-        readHic_list <- list(file = hic_path[x],
-                             chrom = chrom[x],
-                             assembly = assembly[x],
-                             resolution = resolution[x])
-      }
+    if(endsWith(hic_path[1],".hic")){
+      # ==============================================================
+      # read hic format data
+      # x = 1
+      hic_data <- lapply(seq_along(hic_path), function(x){
+        if(!is.null(chromstart) & !is.null(chromend)){
+          readHic_list <- list(file = hic_path[x],
+                               chrom = chrom[x],
+                               chromstart = chromstart[x],
+                               chromend = chromend [x],
+                               assembly = assembly[x],
+                               resolution = resolution[x])
+        }else{
+          readHic_list <- list(file = hic_path[x],
+                               chrom = chrom[x],
+                               assembly = assembly[x],
+                               resolution = resolution[x])
+        }
 
-      tmp <- do.call(plotgardener::readHic,modifyList(readHic_list,readHic_params))
-      return(tmp)
-    })
+        tmp <- do.call(plotgardener::readHic,modifyList(readHic_list,readHic_params))
+        return(tmp)
+      })
+    }else if(endsWith(hic_path[1],".cool")){
+      # ==============================================================
+      # read cool format data
+      if(!is.null(chromstart) & !is.null(chromend)){
+        hic_data <- lapply(seq_along(hic_path), function(x){
+          # load .cool data
+          cool_bedpe <- HiCcompare::cooler2bedpe(path = hic_path[x])$cis[[chrom[x]]]
+          # to up-triangle matrix
+          sparse <- HiCcompare::cooler2sparse(cool_bedpe)[[chrom[x]]]
+          sparse <- sparse[which(sparse$region1 >= chromstart[x] & sparse$region2 >= chromend[x]),]
+          # sparse_df <- cbind(seqnames = rep(chrom[x],nrow(sparse)),sparse)
+          rhdf5::h5closeAll()
+          return(sparse)
+        })
+      }else{
+        hic_data <- lapply(seq_along(hic_path), function(x){
+          # load .cool data
+          cool_bedpe <- HiCcompare::cooler2bedpe(path = hic_path[x])$cis[[chrom[x]]]
+          # to up-triangle matrix
+          sparse <- HiCcompare::cooler2sparse(cool_bedpe)[[chrom[x]]]
+          # sparse_df <- cbind(seqnames = rep(chrom[x],nrow(sparse)),sparse)
+          rhdf5::h5closeAll()
+          return(sparse)
+        })
+      }
+    }else{
+      message("please supply hic data with .hic or .cool format!")
+    }
   }else{
     hic_data <- data
   }
@@ -175,10 +206,20 @@ prepareHic <- function(hic_path = NULL,readHic_params = list(),
     tmp <- getRotatedPolygon(data = hic_data[[x]],rx = 'x',ry = 'y',
                              value = 'count',workers = 1,
                              window = resolution[x])$polygon_coods
-    tmp <- tmp %>% mutate(seqnames = paste("chr",chrom[x],sep = ""),
-                          fileName = file_name[x]) %>%
-      # mutate(value = paste(value,id,sep = "|")) %>%
-      select(seqnames,xp,yp,value,fileName,id)
+
+    # filename
+    if(is.null(file_name)){
+      file_name_tmp <- unlist(strsplit(hic_path[x],split = "/|.hic|.cool"))
+      file_name_ex <- file_name_tmp[length(file_name_tmp)]
+    }else{
+      file_name_ex <- file_name[x]
+    }
+
+    # formatter data
+    tmp$seqnames <- ifelse(endsWith(hic_path[x],".hic"),
+                           paste("chr",chrom[x],sep = ""),chrom[x])
+    tmp$fileName <- file_name_ex
+    tmp <- tmp %>% select(seqnames,xp,yp,value,fileName,id)
     colnames(tmp)[2:5] <- c("start","end","score","fileName")
 
     return(tmp)
@@ -252,4 +293,84 @@ loadloops <- function(loop_file = NULL,
     return(bedpe_df)
   }) -> loop_data
   return(loop_data)
+}
+
+
+#' Load Junction Data
+#'
+#' This function loads junction data from either BAM files or tab-delimited text
+#' files.
+#'
+#' @param data_path A character vector of file paths to the BAM files or
+#' tab-delimited text files.
+#' @param file_name A character vector of file names for the BAM files or
+#' tab-delimited text files. Optional if file names can be extracted from data_path.
+#'
+#' @return A data frame containing the junction data with columns for chromosome,
+#' start position, end position, score, and file name.
+#'
+#' @examples
+#' \dontrun{
+#' # Load junctions from BAM files
+#' bam_paths <- c("path/to/file1.bam", "path/to/file2.bam")
+#' junctions <- loadJunction(data_path = bam_paths)
+#'
+#' # Load junctions from text files
+#' txt_paths <- c("path/to/file1.txt", "path/to/file2.txt")
+#' txt_names <- c("file1", "file2")
+#' junctions <- loadJunction(data_path = txt_paths, file_name = txt_names)
+#' }
+#'
+#' @export
+loadJunction <- function(data_path = NULL,
+                         file_name = NULL){
+  # check data type
+  if(endsWith(data_path[1],".bam")){
+    # extract junctions
+    plyr::ldply(seq_along(data_path),
+                .progress = "text",
+                function(x){
+                  # file name
+                  if(is.null(file_name)){
+                    file_name_tmp <- unlist(strsplit(data_path[x],split = "/|.bam"))
+                    file_name_ex <- file_name_tmp[length(file_name_tmp)]
+                  }else{
+                    file_name_ex <- file_name[x]
+                  }
+
+                  jc <- megadepth::bam_to_junctions(data_path[x])
+                  jc_df <- megadepth::read_junction_table(jc)
+
+                  # filter
+                  data.table::setDT(jc_df)
+
+                  jc_df_sum <- jc_df[unique == 1]
+                  jc_df_sum <- jc_df_sum[, .(chr, start, end)]
+                  jc_df_sum <- jc_df_sum[, .N, by = .(chr, start, end)]
+                  jc_df_sum <- jc_df_sum[,fileName := file_name_ex]
+
+                  return(jc_df_sum)
+                }) -> junc_res
+    colnames(junc_res) <- c("seqnames","start","end","score","fileName")
+  }else{
+    plyr::ldply(seq_along(data_path),
+                .progress = "text",
+                function(x){
+                  # file name
+                  if(is.null(file_name)){
+                    message("please supply your file name with file_name params!")
+                  }else{
+                    file_name_ex <- file_name[x]
+                  }
+
+                  # read data
+                  jc_df_sum <- utils::read.delim(data_path[x],header = FALSE,sep = "\t")
+                  jc_df_sum <- jc_df_sum[,1:4]
+                  jc_df_sum$fileName <- file_name_ex
+
+                  return(jc_df_sum)
+                }) -> junc_res
+    colnames(junc_res) <- c("seqnames","start","end","score","fileName")
+  }
+  return(junc_res)
 }
