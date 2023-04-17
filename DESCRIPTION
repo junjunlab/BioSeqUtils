@@ -13,37 +13,15 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.3
 Imports: 
-    Biostrings,
-    data.table,
-    DescTools,
-    dplyr,
-    furrr,
-    GenomicRanges,
-    ggbio,
-    ggh4x,
-    ggnewscale,
-    ggplot2,
-    ggrepel,
-    HiCcompare,
-    jjAnno,
-    magrittr,
-    megadepth,
-    methods,
-    plotgardener,
-    plyr,
-    plyranges,
-    progress,
-    purrr,
-    RColorBrewer,
-    reticulate,
-    rhdf5,
-    rtracklayer,
-    scales,
-    tibble,
-    tidyr,
-    utils,
-    zplyr
-biocViews: Biostrings GenomicRanges rtracklayer plotgardener megadepth ggbio
+    Biostrings,data.table,DescTools,dplyr,furrr,GenomicRanges,
+    ggbio,ggh4x,ggnewscale,ggplot2,ggrepel,HiCcompare,jjAnno,
+    magrittr,megadepth,methods,plotgardener,plyr,plyranges,
+    progress,purrr,RColorBrewer,reticulate,rhdf5,rtracklayer,
+    scales,tibble,tidyr,utils,zplyr
+Remotes:
+  burchill/zplyr,
+  junjunlab/jjAnno
+biocViews: Biostrings,GenomicRanges,rtracklayer,plotgardener,megadepth,ggbio
 Depends: 
     R (>= 2.10)
 LazyData: true
