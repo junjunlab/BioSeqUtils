@@ -53,6 +53,7 @@ loadBed <- function(bed_file = NULL,file_name = NULL){
 #' file(s). If NULL, the sample name will be extracted from the file path.
 #' @param chrom character vector of chromosome name(s) to be included in the
 #' output. If NULL, all chromosomes are included.
+#' @param format the signal data format, "bw"(default), "wig" or "bedGraph".
 #'
 #' @return A data frame that contains the filtered data from the BigWig file(s)
 #' and the sample name.
@@ -67,10 +68,10 @@ loadBed <- function(bed_file = NULL,file_name = NULL){
 #' }
 #'
 #' @export
-loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL){
+loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL,format = "bw"){
   # loop read bed
   plyr::ldply(1:length(bw_file),function(x){
-    tmp <- rtracklayer::import.bw(bw_file[x])
+    tmp <- rtracklayer::import(bw_file[x],format = format)
 
     # filter chromosome
     if(!is.null(chrom)){

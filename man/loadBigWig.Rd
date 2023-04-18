@@ -4,7 +4,7 @@
 \alias{loadBigWig}
 \title{Load BigWig files and filter chromosomes}
 \usage{
-loadBigWig(bw_file = NULL, file_name = NULL, chrom = NULL)
+loadBigWig(bw_file = NULL, file_name = NULL, chrom = NULL, format = "bw")
 }
 \arguments{
 \item{bw_file}{character vector of file path to BigWig files to be loaded}
@@ -14,6 +14,8 @@ file(s). If NULL, the sample name will be extracted from the file path.}
 
 \item{chrom}{character vector of chromosome name(s) to be included in the
 output. If NULL, all chromosomes are included.}
+
+\item{format}{the signal data format, "bw"(default), "wig" or "bedGraph".}
 }
 \value{
 A data frame that contains the filtered data from the BigWig file(s)
