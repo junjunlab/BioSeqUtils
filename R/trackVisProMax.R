@@ -221,7 +221,7 @@ trackVisProMax <- function(Input_gtf = NULL,
   # Suppress summarise info
   options(dplyr.summarise.inform = FALSE)
   # ==============================================================================
-  # 1_filter target gene region for signals
+  # 1_dplyr::filter target gene region for signals
   # ==============================================================================
   gtf <- Input_gtf
   bw <- Input_bw
@@ -253,34 +253,35 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
   if(!is.null(Input_bw) | !is.null(Input_loop) | !is.null(Input_hic) | !is.null(Input_junction)){
-    input_signal_file <- rbind(bw,loop,heatmap,junction)
+    # input_signal_file <- rbind(bw,loop,heatmap,junction)
+    input_signal_file <- plyr::rbind.fill(bw,loop,heatmap,junction)
   }else{
     input_signal_file <- data.frame(seqnames = NA,start = NA,end = NA,score = NA,
                                     fileName = "trans",track_type = NA,id = NA)
   }
 
   # =====================================================
-  # filter signal data
+  # dplyr::filter signal data
   # x = 1
   if(!is.null(Input_bw)){
     if(is.null(Input_gene)){
       plyr::ldply(1:length(query_region[[1]]),function(x){
-        # filter signals
+        # dplyr::filter signals
         tmp <- input_signal_file %>%
-          filter(track_type != "heatmap") %>%
-          filter(seqnames %in% query_region$query_chr[x]) %>%
-          filter(start >= query_region$query_start[x] & end <= query_region$query_end[x])
+          dplyr::filter(track_type != "heatmap") %>%
+          dplyr::filter(seqnames %in% query_region$query_chr[x]) %>%
+          dplyr::filter(start >= query_region$query_start[x] & end <= query_region$query_end[x])
 
         tmp_cont <- input_signal_file %>%
-          filter(track_type == "heatmap") %>%
-          filter(seqnames %in% query_region$query_chr[x]) %>%
-          filter(start >= query_region$query_start[x] & start <= query_region$query_end[x])
+          dplyr::filter(track_type == "heatmap") %>%
+          dplyr::filter(seqnames %in% query_region$query_chr[x]) %>%
+          dplyr::filter(start >= query_region$query_start[x] & start <= query_region$query_end[x])
 
         # remove no 4 points position
-        id_n <- data.frame(table(tmp_cont$id)) %>% filter(Freq == 4)
+        id_n <- data.frame(table(tmp_cont$id)) %>% dplyr::filter(Freq == 4)
         tmp_cont <- tmp_cont[which(tmp_cont$id %in% id_n$Var1),]
 
-        mer_tmp <- rbind(tmp,tmp_cont) %>%
+        mer_tmp <- plyr::rbind.fill(tmp,tmp_cont) %>%
           mutate(gene = paste(ifelse(startsWith(query_region$query_chr[x],"chr"),
                                      query_region$query_chr[x],
                                      paste("chr",query_region$query_chr[x],sep = "")),
@@ -292,14 +293,14 @@ trackVisProMax <- function(Input_gtf = NULL,
       # x = 1
       plyr::ldply(seq_along(Input_gene),function(x){
         tmp <- gtf %>%
-          filter(gene_name == Input_gene[x])
+          dplyr::filter(gene_name == Input_gene[x])
         chr <- as.character(unique(tmp$seqnames))
         xmin = min(tmp$start);xmax = max(tmp$end)
 
-        # filter signals
+        # dplyr::filter signals
         sig <- input_signal_file %>%
-          filter(seqnames %in% chr) %>%
-          filter(start >= xmin & end <= xmax) %>%
+          dplyr::filter(seqnames %in% chr) %>%
+          dplyr::filter(start >= xmin & end <= xmax) %>%
           mutate(gene = Input_gene[x])
         return(sig)
       }) -> region.df
@@ -308,30 +309,30 @@ trackVisProMax <- function(Input_gtf = NULL,
     # region.df <- NULL
     if(is.null(Input_gene)){
       plyr::ldply(1:length(query_region[[1]]),function(x){
-        # filter signals
+        # dplyr::filter signals
         if(is.null(Input_loop) & is.null(Input_hic)){
           tmp_tmp <- input_signal_file
         }else if(!is.null(Input_loop) & is.null(Input_hic)){
           tmp <- input_signal_file %>%
-            filter(seqnames %in% query_region$query_chr[x]) %>%
-            filter(start >= query_region$query_start[x] & end <= query_region$query_end[x])
+            dplyr::filter(seqnames %in% query_region$query_chr[x]) %>%
+            dplyr::filter(start >= query_region$query_start[x] & end <= query_region$query_end[x])
           tmp_tmp <- tmp
         }else if(!is.null(Input_hic)){
           tmp <- input_signal_file %>%
-            filter(track_type != "heatmap") %>%
-            filter(seqnames %in% query_region$query_chr[x]) %>%
-            filter(start >= query_region$query_start[x] & end <= query_region$query_end[x])
+            dplyr::filter(track_type != "heatmap") %>%
+            dplyr::filter(seqnames %in% query_region$query_chr[x]) %>%
+            dplyr::filter(start >= query_region$query_start[x] & end <= query_region$query_end[x])
 
           tmp_cont <- input_signal_file %>%
-            filter(track_type == "heatmap") %>%
-            filter(seqnames %in% query_region$query_chr[x]) %>%
-            filter(start >= query_region$query_start[x] & start <= query_region$query_end[x])
+            dplyr::filter(track_type == "heatmap") %>%
+            dplyr::filter(seqnames %in% query_region$query_chr[x]) %>%
+            dplyr::filter(start >= query_region$query_start[x] & start <= query_region$query_end[x])
 
           # remove no 4 points position
-          id_n <- data.frame(table(tmp_cont$fileName,tmp_cont$id)) %>% filter(Freq == 4)
+          id_n <- data.frame(table(tmp_cont$fileName,tmp_cont$id)) %>% dplyr::filter(Freq == 4)
           tmp_cont <- tmp_cont[which(tmp_cont$id %in% unique(id_n$Var2)),]
 
-          tmp_tmp <- rbind(tmp,tmp_cont)
+          tmp_tmp <- plyr::rbind.fill(tmp,tmp_cont)
         }
 
         mer_tmp <- tmp_tmp %>%
@@ -343,7 +344,7 @@ trackVisProMax <- function(Input_gtf = NULL,
       }) -> region.df
     }else{
       plyr::ldply(seq_along(Input_gene),function(x){
-        # filter signals
+        # dplyr::filter signals
         sig <- input_signal_file %>%
           mutate(gene = Input_gene[x])
         return(sig)
@@ -352,19 +353,19 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
   # =====================================================
-  # filter peaks files
+  # dplyr::filter peaks files
   if(!is.null(Input_gene) & !is.null(Input_bed)){
     plyr::ldply(seq_along(Input_gene),function(x){
       tmp <- gtf %>%
-        filter(gene_name == Input_gene[x])
+        dplyr::filter(gene_name == Input_gene[x])
       chr <- as.character(unique(tmp$seqnames))
       xmin = min(tmp$start);xmax = max(tmp$end)
 
-      # filter signals
+      # dplyr::filter signals
       # peak_width = 0.5
       sig <- bed %>%
-        filter(seqnames %in% chr) %>%
-        filter(start >= xmin & end <= xmax) %>%
+        dplyr::filter(seqnames %in% chr) %>%
+        dplyr::filter(start >= xmin & end <= xmax) %>%
         mutate(gene = Input_gene[x],
                ymin = y - peak_width*0.5,
                ymax = y + peak_width*0.5)
@@ -372,10 +373,10 @@ trackVisProMax <- function(Input_gtf = NULL,
     }) -> bed.df
   }else if(is.null(Input_gene) & !is.null(Input_bed)){
     plyr::ldply(1:length(query_region[[1]]),function(x){
-      # filter signals
+      # dplyr::filter signals
       tmp <- bed %>%
-        filter(seqnames %in% query_region$query_chr[x]) %>%
-        filter(start >= query_region$query_start[x] & end <= query_region$query_end[x]) %>%
+        dplyr::filter(seqnames %in% query_region$query_chr[x]) %>%
+        dplyr::filter(start >= query_region$query_start[x] & end <= query_region$query_end[x]) %>%
         mutate(gene = paste(ifelse(startsWith(query_region$query_chr[x],"chr"),
                                    query_region$query_chr[x],
                                    paste("chr",query_region$query_chr[x],sep = "")),
@@ -412,7 +413,7 @@ trackVisProMax <- function(Input_gtf = NULL,
                            gene = gene)
 
   # merge
-  mer.df <- rbind(region.df,tran_facet) %>% unique()
+  mer.df <- plyr::rbind.fill(region.df,tran_facet) %>% unique()
 
   # ==============================================================================
   # 3_add group info for genes or samples
@@ -452,7 +453,7 @@ trackVisProMax <- function(Input_gtf = NULL,
       mutate(gene_group = NA)
   }
 
-  # tmp1 %>% select(gene,gene_group) %>% distinct()
+  # tmp1 %>% dplyr::select(gene,gene_group) %>% distinct()
 
   if(!is.null(gene_group_info2)){
     # g = 1
@@ -463,7 +464,7 @@ trackVisProMax <- function(Input_gtf = NULL,
         mutate(gene_group2 = names(gene_group_info2[g]))
     }) -> tmp1
 
-    # tmp1 %>% select(gene,gene_group,gene_group2) %>% distinct()
+    # tmp1 %>% dplyr::select(gene,gene_group,gene_group2) %>% distinct()
 
     # orders
     if(is.null(gene_group_info2_order)){
@@ -565,13 +566,13 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
   # str(bed.df.new)
-  # tmp2 %>% select(gene,gene_group,gene_group2,
+  # tmp2 %>% dplyr::select(gene,gene_group,gene_group2,
   #                 sample_group,sample_group2) %>% distinct()
 
   # ==============================================================================
   # 4_gene structures
   # ==============================================================================
-  # tmp2 %>% select(gene,gene_group,gene_group2) %>% distinct() %>%
+  # tmp2 %>% dplyr::select(gene,gene_group,gene_group2) %>% distinct() %>%
   #   arrange(gene)
   # x = 1
   # collapse_trans = FALSE
@@ -579,10 +580,10 @@ trackVisProMax <- function(Input_gtf = NULL,
   if(is.null(Input_gene)){
     tmp_gtf <- plyr::ldply(1:length(query_region[[1]]),function(x){
       tmp <- gtf %>%
-        filter(seqnames %in% query_region$query_chr[x] &
-                 start >= query_region$query_start[x] &
-                 end <= query_region$query_end[x] &
-                 type != "gene") %>%
+        dplyr::filter(seqnames %in% query_region$query_chr[x] &
+                        start >= query_region$query_start[x] &
+                        end <= query_region$query_end[x] &
+                        type != "gene") %>%
         mutate(gene = paste(ifelse(startsWith(query_region$query_chr[x],"chr"),
                                    query_region$query_chr[x],
                                    paste("chr",query_region$query_chr[x],sep = "")),
@@ -592,7 +593,7 @@ trackVisProMax <- function(Input_gtf = NULL,
     })
   }else{
     tmp_gtf <- gtf %>%
-      filter(gene_name %in% Input_gene & type != "gene") %>%
+      dplyr::filter(gene_name %in% Input_gene & type != "gene") %>%
       mutate(gene = gene_name)
   }
 
@@ -623,7 +624,7 @@ trackVisProMax <- function(Input_gtf = NULL,
                                  strand = new$strand)
     }
 
-    # filter top transcripts
+    # dplyr::filter top transcripts
     trans_len <- new_tmp %>%
       dplyr::filter(type == "exon") %>%
       dplyr::group_by(transcript_id,type) %>%
@@ -638,8 +639,8 @@ trackVisProMax <- function(Input_gtf = NULL,
     }
 
     filtered_trans <- new_tmp %>%
-      # filter(transcript_id %in% trans_len$transcript_id & type != "transcript")
-      filter(transcript_id %in% trans_len$transcript_id)
+      # dplyr::filter(transcript_id %in% trans_len$transcript_id & type != "transcript")
+      dplyr::filter(transcript_id %in% trans_len$transcript_id)
 
     # x = 1
     tid = trans_len$transcript_id
@@ -657,7 +658,7 @@ trackVisProMax <- function(Input_gtf = NULL,
         # }
       }
 
-      tmp <- filtered_trans %>% filter(transcript_id %in% rev(tid)[x]) %>%
+      tmp <- filtered_trans %>% dplyr::filter(transcript_id %in% rev(tid)[x]) %>%
         mutate(ymin = if_else(type %in% c("5UTR","five_prime_utr","3UTR","three_prime_utr"),
                               y_p - exon_width*0.25,y_p - exon_width*0.5),
                ymax = if_else(type %in% c("5UTR","five_prime_utr","3UTR","three_prime_utr"),
@@ -666,7 +667,7 @@ trackVisProMax <- function(Input_gtf = NULL,
 
       # remove exon if it is a coding gene
       if("CDS" %in% unique(tmp$type)){
-        tmp <- tmp %>% filter(type != "exon")
+        tmp <- tmp %>% dplyr::filter(type != "exon")
       }else{
         tmp <- tmp
       }
@@ -743,7 +744,7 @@ trackVisProMax <- function(Input_gtf = NULL,
   if(add_gene_label_layer == TRUE){
     # gene_label_df
     gene_label_df <- transcript.df %>%
-      filter(type == "transcript")
+      dplyr::filter(type == "transcript")
 
     # gene label layer
     # gene_label_params = list(size = 3,label_aes = "gene_name",color = "black")
@@ -766,7 +767,7 @@ trackVisProMax <- function(Input_gtf = NULL,
     mapping = aes(x = (start + end)/2,y = y - exon_width/2 + gene_label_shift_y,
                   label = gene_name)
 
-    # select function
+    # dplyr::select function
     if(!is.null(Input_gene)){
       gene_label_layer <- do.call(geom_text,
                                   modifyList(list(data = gene_label_df,
@@ -794,7 +795,7 @@ trackVisProMax <- function(Input_gtf = NULL,
   # x = 1
   plyr::ldply(seq_along(gid),function(x){
     tmp <- transcript.df %>%
-      filter(gene_id == gid[x] & type == "transcript")
+      dplyr::filter(gene_id == gid[x] & type == "transcript")
 
     # create segment
     plyr::ldply(1:nrow(tmp),function(x){
@@ -863,20 +864,20 @@ trackVisProMax <- function(Input_gtf = NULL,
 
   # trans_struct_layer
   # trans_exon_col_params = list(fill = "orange",color = "grey60")
-  # trans_struct_layer <- geom_rect(data = transcript.df %>% filter(type != "transcript"),
+  # trans_struct_layer <- geom_rect(data = transcript.df %>% dplyr::filter(type != "transcript"),
   #                                 aes(xmin = start,xmax = end,
   #                                     ymin = ymin, ymax = ymax),
   #                                 fill = trans_exon_col_params$fill,
   #                                 color = trans_exon_col_params$color)
 
   if(!is.null(trans_exon_col_params$mapping)){
-    trans_mapping <- list(data = transcript.df %>% filter(type != "transcript"),
+    trans_mapping <- list(data = transcript.df %>% dplyr::filter(type != "transcript"),
                           mapping= aes(xmin = start,xmax = end,
                                        ymin = ymin, ymax = ymax,
                                        fill = "orange"),
                           color = "grey60")
   }else{
-    trans_mapping <- list(data = transcript.df %>% filter(type != "transcript"),
+    trans_mapping <- list(data = transcript.df %>% dplyr::filter(type != "transcript"),
                           mapping= aes(xmin = start,xmax = end,
                                        ymin = ymin, ymax = ymax),
                           fill = "orange",
@@ -960,7 +961,7 @@ trackVisProMax <- function(Input_gtf = NULL,
   # arrow layer stands strand information
   # gene_dist_mark_params = list(linewidth = 0.75,color = "black",length = 2)
   seg_arrow_layer <- lapply(unique(arrow.df$gene), function(x){
-    tmp <- arrow.df %>% filter(gene == x)
+    tmp <- arrow.df %>% dplyr::filter(gene == x)
     # geom_segment(data = tmp,
     #              aes(x = start,xend = end,
     #                  y = y,yend = y),linewidth = gene_dist_mark_params$linewidth,
@@ -1012,26 +1013,26 @@ trackVisProMax <- function(Input_gtf = NULL,
   if(!is.null(Input_bw) | !is.null(Input_loop) |!is.null(Input_hic) | !is.null(Input_junction)){
     # signal_range_pos = c(0.9,0.9)
     rg_xpos <- tmp2 %>%
-      filter(!(fileName %in% add_facet_name)) %>%
+      dplyr::filter(!(fileName %in% add_facet_name)) %>%
       group_by(gene) %>%
       summarise(xmin = min(start),xmax = max(end)) %>%
       ungroup() %>% mutate(rg_xpos = (xmax - xmin)*signal_range_pos[1] + xmin) %>%
-      select(gene,rg_xpos)
+      dplyr::select(gene,rg_xpos)
 
     # primitive range info for heatmap
-    hetamp_y <- tmp2 %>% filter(track_type == "heatmap") %>%
+    hetamp_y <- tmp2 %>% dplyr::filter(track_type == "heatmap") %>%
       group_by(fileName) %>% summarise(smax = max(end))
 
     # merge with rg_xpos
     rg_info <- tmp2 %>%
-      filter(!(fileName %in% add_facet_name)) %>%
+      dplyr::filter(!(fileName %in% add_facet_name)) %>%
       group_by(fileName,gene,track_type,gene_group,gene_group2,sample_group,sample_group2) %>%
       summarise(smin = 0,smax = max(score)) %>%
       ungroup() %>%
       # mutate(rg_ypos = (smax - smin)*signal_range_pos[2] + smin) %>%
       left_join(.,rg_xpos,by = "gene")
 
-    # whether filter junction
+    # whether dplyr::filter junction
     if(junc_layer_combined == TRUE){
       rg_info <- rg_info[which(rg_info$track_type != "junction"),]
     }
@@ -1064,7 +1065,7 @@ trackVisProMax <- function(Input_gtf = NULL,
           tibble::rownames_to_column(var = "fileName")
         colnames(rg_tmp)[2] <- "smax_new"
         # merge
-        tmp <- rg_info %>% filter(gene == names(signal_range)[x]) %>%
+        tmp <- rg_info %>% dplyr::filter(gene == names(signal_range)[x]) %>%
           left_join(.,rg_tmp,by = "fileName")
         # mutate(smax = smax_new)
       }) -> new_range
@@ -1074,7 +1075,7 @@ trackVisProMax <- function(Input_gtf = NULL,
       # x = 1
       plyr::ldply(1:nrow(rg_info),function(x){
         tmp = rg_info[x,]
-        tmp1 <- new_range %>% filter(fileName == tmp$fileName & gene == tmp$gene)
+        tmp1 <- new_range %>% dplyr::filter(fileName == tmp$fileName & gene == tmp$gene)
 
         tmp <- tmp %>%
           mutate(smax = ifelse(nrow(tmp1) == 0,smax,tmp1$smax_new))
@@ -1083,7 +1084,7 @@ trackVisProMax <- function(Input_gtf = NULL,
     }else{
       if(fixed_column_range == TRUE){
         plyr::ldply(1:length(unique(rg_info$gene)),function(x){
-          tmp <- rg_info %>% filter(gene == unique(rg_info$gene)[x]) %>%
+          tmp <- rg_info %>% dplyr::filter(gene == unique(rg_info$gene)[x]) %>%
             mutate(smax = max(smax))
         }) -> new_range
       }else{
@@ -1164,7 +1165,7 @@ trackVisProMax <- function(Input_gtf = NULL,
     # x = 2
     panel_range_layer <- lapply(iter_loop, function(x){
       if(x <= nrow(new_range)){
-        tmp <- new_range %>% filter(panel_num == x)
+        tmp <- new_range %>% dplyr::filter(panel_num == x)
         if(tmp$yr_type == "reverse"){
           sy <- scale_y_continuous(limits = c(tmp$smax_value,0))
         }else{
@@ -1190,7 +1191,7 @@ trackVisProMax <- function(Input_gtf = NULL,
               }
               sy <- scale_y_continuous(limits = c(0,tarns_pos_y_range[index,]$y + 0.5))
             }else{
-              tmp_p <- final_arrow_data %>% select(gene,y) %>%
+              tmp_p <- final_arrow_data %>% dplyr::select(gene,y) %>%
                 group_by(gene) %>% summarise(y = max(y))
               sy <- scale_y_continuous(limits = c(0,tmp_p$y[x - nrow(new_range)] + 1.5))
 
@@ -1282,8 +1283,8 @@ trackVisProMax <- function(Input_gtf = NULL,
       tmp <- higlight_region[[x]]
 
       facet_info <- tmp2 %>%
-        filter(!(fileName %in% c("chrom")) & gene %in% names(higlight_region)[x]) %>%
-        select(fileName,gene,gene_group,gene_group2,sample_group,sample_group2) %>%
+        dplyr::filter(!(fileName %in% c("chrom")) & gene %in% names(higlight_region)[x]) %>%
+        dplyr::select(fileName,gene,gene_group,gene_group2,sample_group,sample_group2) %>%
         distinct()
 
       res <- data.frame(xmin = tmp[["start"]],
@@ -1301,10 +1302,10 @@ trackVisProMax <- function(Input_gtf = NULL,
     # higlight_region_layer
     higlight_region_layer <-
       lapply(1:length(higlight_region), function(x){
-        tmp <- hl_region %>% filter(gene %in% names(higlight_region)[x])
+        tmp <- hl_region %>% dplyr::filter(gene %in% names(higlight_region)[x])
         col_n <- unique(tmp$col)
         lapply(1:length(col_n), function(x){
-          tmp_col <- tmp %>% filter(col == col_n[x])
+          tmp_col <- tmp %>% dplyr::filter(col == col_n[x])
           geom_rect(data = tmp_col,
                     aes(xmin = xmin,xmax = xmax,ymin = ymin,ymax = ymax),
                     fill = col_n[x],color = NA,
@@ -1331,13 +1332,13 @@ trackVisProMax <- function(Input_gtf = NULL,
       tmp <- background_color_region[[x]]
 
       back_col_info <- tmp2 %>%
-        filter(gene %in% names(background_color_region)[x]) %>%
-        select(fileName,gene,gene_group,gene_group2,sample_group,sample_group2) %>%
+        dplyr::filter(gene %in% names(background_color_region)[x]) %>%
+        dplyr::select(fileName,gene,gene_group,gene_group2,sample_group,sample_group2) %>%
         distinct() %>%
         mutate(xmin = -Inf,xmax = Inf,
                ymin = -Inf,ymax = Inf,
                col = tmp[fileName]) %>%
-        filter(col != "NA")
+        dplyr::filter(col != "NA")
       return(back_col_info)
 
     }) -> background_region
@@ -1508,25 +1509,27 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
   # ==============================================================================
-  # 12_signal layer select
+  # 12_signal layer dplyr::select
   # ==============================================================================
   # signal_layer_bw_params = list()
   # signal_layer_loop_params = list()
 
   # bigwig layer
+  # bw_geom = "rect"
   if(!is.null(Input_bw)){
     bw_data <- tmp2[which(tmp2$track_type == "bigwig"),]
-    bw_data$start <- bw_data$start - 1
+    bw_data$start <- c(bw_data$start[1],bw_data$start[2:nrow(bw_data)]-1)
+
+    # bw_data$start <- bw_data$start - 1
     signal_layer_geom_rect <- do.call(geom_rect,
                                       modifyList(
                                         list(data = bw_data,
                                              mapping = aes(xmin = start,xmax = end,
                                                            ymin = 0, ymax = score,
                                                            fill = fileName),
-                                             color = NA,
+                                             color = NA,size = 0,
                                              show.legend = FALSE),
                                         signal_layer_bw_params))
-
 
   }else{
     signal_layer_geom_rect <- NULL
@@ -1622,7 +1625,7 @@ trackVisProMax <- function(Input_gtf = NULL,
         xy_coord2$x <- rev(xy_coord2$x)
 
         # res
-        curve_band <- rbind(xy_coord1,xy_coord2) %>%
+        curve_band <- plyr::rbind.fill(xy_coord1,xy_coord2) %>%
           dplyr::mutate(seqnames = tmp$seqnames,
                         start = tmp$start,
                         end = tmp$end,
@@ -1788,9 +1791,14 @@ trackVisProMax <- function(Input_gtf = NULL,
                           name = "loop_distance\n(10kb)") +
     # bigwig layer
     ggnewscale::new_scale_fill() +
+    # ggnewscale::new_scale_color() +
     signal_layer_geom_rect +
     scale_fill_manual(values = c(sample_fill_col,useless_col),
                       name = "") +
+    # scale_color_manual(values = ggplot2::alpha(c(sample_fill_col,useless_col),
+    #                                            alpha = ifelse(!is.null(signal_layer_bw_params$alpha),
+    #                                                           signal_layer_bw_params$alpha,1)),
+    #                    name = "") +
     # heatmap layer
     ggnewscale::new_scale_fill() +
     signal_layer_geom_polygon +
@@ -1843,7 +1851,7 @@ trackVisProMax <- function(Input_gtf = NULL,
   # ==============================================================================
   if(draw_chromosome == TRUE){
     annoChr <- lapply(1:length(unique(segment.df$gene)), function(x){
-      tmp <- segment.df %>% filter(gene == unique(segment.df$gene)[x]) %>%
+      tmp <- segment.df %>% dplyr::filter(gene == unique(segment.df$gene)[x]) %>%
         mutate(fileName = "chrom",
                seqnames = if_else(startsWith(as.character(seqnames),"chr"),
                                   seqnames,paste("chr",seqnames,sep = "")))
