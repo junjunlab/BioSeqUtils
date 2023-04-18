@@ -1,7 +1,7 @@
 globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scales", "gene_group",
                   "gene_group2", "geom_label", "ggplotGrob", "guide_legend", "label_pos", "labeller",
                   "margin", "sampleName", "sample_group", "sample_group2", "scale_color_gradientn",
-                  "scale_color_manual", "scale_fill_gradientn", "scale_x_continuous",
+                  "scale_color_manual", "scale_fill_gradientn", "scale_x_continuous","smin_new",
                   "scale_y_continuous", "score", "smax", "smax_label", "smax_new", "smin",
                   "theme_void", "track_type", "xend", "yend", "ymax", "ymin"))
 
@@ -1027,7 +1027,7 @@ trackVisProMax <- function(Input_gtf = NULL,
     rg_info <- tmp2 %>%
       dplyr::filter(!(fileName %in% add_facet_name)) %>%
       group_by(fileName,gene,track_type,gene_group,gene_group2,sample_group,sample_group2) %>%
-      summarise(smin = 0,smax = max(score)) %>%
+      summarise(smin = min(score),smax = max(score)) %>%
       ungroup() %>%
       # mutate(rg_ypos = (smax - smin)*signal_range_pos[2] + smin) %>%
       left_join(.,rg_xpos,by = "gene")
@@ -1060,10 +1060,27 @@ trackVisProMax <- function(Input_gtf = NULL,
     if(!is.null(signal_range)){
       plyr::ldply(1:length(signal_range),function(x){
         # range new
-        rg_tmp <- signal_range[[x]] %>%
-          data.frame() %>%
-          tibble::rownames_to_column(var = "fileName")
-        colnames(rg_tmp)[2] <- "smax_new"
+        if(is.list(signal_range[[x]])){
+          rg_tmp <-
+            signal_range[[x]] %>%
+            data.frame(check.names = FALSE) %>%
+            t() %>% data.frame(check.names = FALSE) %>%
+            tibble::rownames_to_column(var = "fileName")
+          colnames(rg_tmp)[2:3] <- c("smin_new","smax_new")
+        }else{
+          rg_tmp <-
+            signal_range[[x]] %>%
+            data.frame(check.names = FALSE) %>%
+            tibble::rownames_to_column(var = "fileName") %>%
+            dplyr::mutate(smin_new = 0,.before = ".")
+          colnames(rg_tmp)[3] <- "smax_new"
+        }
+
+        # rg_tmp <- signal_range[[x]] %>%
+        #   data.frame() %>%
+        #   tibble::rownames_to_column(var = "fileName")
+        # colnames(rg_tmp)[2] <- "smax_new"
+
         # merge
         tmp <- rg_info %>% dplyr::filter(gene == names(signal_range)[x]) %>%
           left_join(.,rg_tmp,by = "fileName")
@@ -1071,21 +1088,24 @@ trackVisProMax <- function(Input_gtf = NULL,
       }) -> new_range
 
       # recover old range if is smax_new NA
-      new_range <- new_range %>% mutate(smax_new = ifelse(is.na(smax_new),smax,smax_new))
+      new_range <- new_range %>%
+        mutate(smin_new = ifelse(is.na(smin_new),smin,smin_new),
+               smax_new = ifelse(is.na(smax_new),smax,smax_new))
       # x = 1
       plyr::ldply(1:nrow(rg_info),function(x){
         tmp = rg_info[x,]
         tmp1 <- new_range %>% dplyr::filter(fileName == tmp$fileName & gene == tmp$gene)
 
         tmp <- tmp %>%
-          mutate(smax = ifelse(nrow(tmp1) == 0,smax,tmp1$smax_new))
+          mutate(smax = ifelse(nrow(tmp1) == 0,smax,tmp1$smax_new),
+                 smin = ifelse(nrow(tmp1) == 0,smin,tmp1$smin_new))
       }) -> new_range
 
     }else{
       if(fixed_column_range == TRUE){
         plyr::ldply(1:length(unique(rg_info$gene)),function(x){
           tmp <- rg_info %>% dplyr::filter(gene == unique(rg_info$gene)[x]) %>%
-            mutate(smax = max(smax))
+            mutate(smax = max(smax),smin = min(smin))
         }) -> new_range
       }else{
         new_range <- rg_info
@@ -1112,7 +1132,8 @@ trackVisProMax <- function(Input_gtf = NULL,
     # add range text label column
     new_range <- new_range %>%
       mutate(smax_value = ceiling(smax),
-             smax_label = paste("[0-",as.integer(ceiling(smax)),"]",sep = ""))
+             smin_value = floor(smin),
+             smax_label = paste("[",as.integer(floor(smin)),"-",as.integer(ceiling(smax)),"]",sep = ""))
 
     # ============================
     # whether reverse y axis
@@ -1167,9 +1188,9 @@ trackVisProMax <- function(Input_gtf = NULL,
       if(x <= nrow(new_range)){
         tmp <- new_range %>% dplyr::filter(panel_num == x)
         if(tmp$yr_type == "reverse"){
-          sy <- scale_y_continuous(limits = c(tmp$smax_value,0))
+          sy <- scale_y_continuous(limits = c(tmp$smax_value,tmp$smin_value),trans = "reverse")
         }else{
-          sy <- scale_y_continuous(limits = c(0,tmp$smax_value),trans = "reverse")
+          sy <- scale_y_continuous(limits = c(tmp$smin_value,tmp$smax_value))
         }
       }else{
         if(!is.null(Input_bed) & x %in%
