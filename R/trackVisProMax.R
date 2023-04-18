@@ -1167,9 +1167,9 @@ trackVisProMax <- function(Input_gtf = NULL,
       if(x <= nrow(new_range)){
         tmp <- new_range %>% dplyr::filter(panel_num == x)
         if(tmp$yr_type == "reverse"){
-          sy <- scale_y_continuous(limits = c(tmp$smax_value,0))
+          sy <- scale_y_continuous(limits = c(tmp$smax_value,0),trans = "reverse")
         }else{
-          sy <- scale_y_continuous(limits = c(0,tmp$smax_value),trans = "reverse")
+          sy <- scale_y_continuous(limits = c(0,tmp$smax_value))
         }
       }else{
         if(!is.null(Input_bed) & x %in%
