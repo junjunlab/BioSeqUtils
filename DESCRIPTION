@@ -7,7 +7,8 @@ Authors@R:
            comment = c(ORCID = "YOUR-ORCID-ID"))
 Description: For Extracting multiple different features sequence of gene, here supply 
   a way to get the sequence like exon,5UTR,3UTR,CDS,intron from your own local GTF/GFF
-  annotation file and genome file. Other useful functions are implemented.
+  annotation file and genome file. Track visualization is good choice for this package.
+  Other useful functions are implemented.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
