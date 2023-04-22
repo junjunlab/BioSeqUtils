@@ -937,7 +937,7 @@ trackVisProMax <- function(Input_gtf = NULL,
                       end = c(tmp$start + (tmp$end - tmp$start)/3,tmp$end)) %>%
       mutate(fileName = tmp$fileName,gene = tmp$gene,strand = tmp$strand,
              .before = start) %>%
-      mutate(label = paste(tmp$seqnames,": ",round((tmp$end - tmp$start)/10^4,digits = 2),
+      mutate(label = paste(tmp$seqnames,": ",round((tmp$end - tmp$start)/10^3,digits = 2),
                            " kb",sep = ""),
              label_pos = (tmp$end + tmp$start)/2) %>%
       mutate(gene_group = tmp$gene_group,
