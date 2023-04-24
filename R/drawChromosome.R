@@ -38,6 +38,7 @@
 #'
 #' @importFrom ggplot2 ggplot geom_segment geom_rect geom_polygon aes scale_fill_manual
 #' theme_bw theme xlab ylab element_blank element_text scale_fill_gradient arrow unit
+#' geom_area
 #' geom_text
 #' @importFrom dplyr filter group_by summarize select
 #' @importFrom plyr ldply

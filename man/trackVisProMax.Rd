@@ -98,7 +98,7 @@ information for signal tracks.}
 \item{Input_loop}{A loop file from "loadloops" function containing the loop
 information for loop tracks.}
 
-\item{Loop_curve_geom}{the curve type for loop tracks, "geom_arch2"(default)
+\item{Loop_curve_geom}{The curve type for loop tracks, "geom_arch2"(default)
 or "geom_arch".}
 
 \item{Input_hic}{A Hi-C interaction file from "prepareHic" function containing
@@ -306,5 +306,5 @@ JunZhang
 This function generates a multi-track visualization of different genomic data
 types, including gene annotation, signal tracks, loops, Hi-C interactions, bed
 files, and junction files. For more details and full documentation, please refer
-to \link\href{https://junjunlab.github.io/BioSeqUtils-manual/}{BioSeqUtils-manual}.
+to \href{https://junjunlab.github.io/BioSeqUtils-manual/}{BioSeqUtils-manual}.
 }

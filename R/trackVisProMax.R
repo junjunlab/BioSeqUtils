@@ -12,7 +12,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' This function generates a multi-track visualization of different genomic data
 #' types, including gene annotation, signal tracks, loops, Hi-C interactions, bed
 #' files, and junction files. For more details and full documentation, please refer
-#' to \link[BioSeqUtils-manual](https://junjunlab.github.io/BioSeqUtils-manual/).
+#' to [BioSeqUtils-manual](https://junjunlab.github.io/BioSeqUtils-manual/).
 #'
 #' @references [https://junjunlab.github.io/BioSeqUtils-manual/](https://junjunlab.github.io/BioSeqUtils-manual/)
 #' @references [https://github.com/junjunlab/BioSeqUtils](https://github.com/junjunlab/BioSeqUtils)
@@ -29,7 +29,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' information for signal tracks.
 #' @param Input_loop A loop file from "loadloops" function containing the loop
 #' information for loop tracks.
-#' @param Loop_curve_geom the curve type for loop tracks, "geom_arch2"(default)
+#' @param Loop_curve_geom The curve type for loop tracks, "geom_arch2"(default)
 #' or "geom_arch".
 #' @param Input_hic A Hi-C interaction file from "prepareHic" function containing
 #' the Hi-C interaction information for heatmap tracks.
@@ -1590,7 +1590,6 @@ trackVisProMax <- function(Input_gtf = NULL,
     bw_data <- tmp2[which(tmp2$track_type == "bigwig"),]
     bw_data$start <- c(bw_data$start[1],bw_data$start[2:nrow(bw_data)]-1)
 
-    # bw_data$start <- bw_data$start - 1
     signal_layer_geom_rect <- do.call(geom_rect,
                                       modifyList(
                                         list(data = bw_data,
@@ -1600,7 +1599,6 @@ trackVisProMax <- function(Input_gtf = NULL,
                                              color = NA,size = 0,
                                              show.legend = FALSE),
                                         signal_layer_bw_params))
-
   }else{
     signal_layer_geom_rect <- NULL
   }
@@ -1625,6 +1623,8 @@ trackVisProMax <- function(Input_gtf = NULL,
                                                              y = 0,yend = score,
                                                              color = score)),
                                           signal_layer_loop_params))
+    }else{
+      message("Please supply 'geom_arch' or 'geom_arch2'!")
     }
 
   }else{
