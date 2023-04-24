@@ -7,8 +7,11 @@
 trackVisProMax(
   Input_gtf = NULL,
   Input_gene = NULL,
+  upstream_extend = 0,
+  downstream_extend = 0,
   Input_bw = NULL,
   Input_loop = NULL,
+  Loop_curve_geom = "geom_arch2",
   Input_hic = NULL,
   Input_bed = NULL,
   Input_junction = NULL,
@@ -80,7 +83,13 @@ trackVisProMax(
 \item{Input_gtf}{A GTF file containing the gene annotation information
 with data frame format. Must be specified if you want to add gene annotation tracks.}
 
-\item{Input_gene}{A character vectors. Must be specified if you want to add
+\item{Input_gene}{A character vectors. Must be specified if you want to add}
+
+\item{upstream_extend}{Extend bases upstream for gene transcription start site,
+default 0, accepting one or more vectors.}
+
+\item{downstream_extend}{Extend bases downstream for gene transcription end site,
+default 0, accepting one or more vectors.
 gene annotation tracks.}
 
 \item{Input_bw}{A bigWig file from "loadBigWig" function containing the signal
@@ -88,6 +97,9 @@ information for signal tracks.}
 
 \item{Input_loop}{A loop file from "loadloops" function containing the loop
 information for loop tracks.}
+
+\item{Loop_curve_geom}{the curve type for loop tracks, "geom_arch2"(default)
+or "geom_arch".}
 
 \item{Input_hic}{A Hi-C interaction file from "prepareHic" function containing
 the Hi-C interaction information for heatmap tracks.}
@@ -105,7 +117,8 @@ It must contain three elements: query_chr, query_start, and query_end.}
 tracks created by bigWig files. Passed by "ggplot2::geom_rect" function.}
 
 \item{signal_layer_loop_params}{A list of parameters for configuring loop
-tracks created by loop files. Passed by "ggbio::geom_arch" function.}
+tracks created by loop files. Passed by "ggbio::geom_arch" or "jjPlot::geom_arch2"
+function.}
 
 \item{signal_layer_heatmap_params}{A list of parameters for configuring
 heatmap tracks created by Hi-C interaction files. Passed by
@@ -282,10 +295,16 @@ GGPLOT
 \description{
 Visualize genomic data using BioSeqUtils package
 }
+\references{
+\url{https://junjunlab.github.io/BioSeqUtils-manual/}
+
+\url{https://github.com/junjunlab/BioSeqUtils}
+}
 \author{
 JunZhang
 
 This function generates a multi-track visualization of different genomic data
 types, including gene annotation, signal tracks, loops, Hi-C interactions, bed
-files, and junction files.
+files, and junction files. For more details and full documentation, please refer
+to \link\href{https://junjunlab.github.io/BioSeqUtils-manual/}{BioSeqUtils-manual}.
 }

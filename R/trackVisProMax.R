@@ -11,16 +11,26 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #'
 #' This function generates a multi-track visualization of different genomic data
 #' types, including gene annotation, signal tracks, loops, Hi-C interactions, bed
-#' files, and junction files.
+#' files, and junction files. For more details and full documentation, please refer
+#' to \link[BioSeqUtils-manual](https://junjunlab.github.io/BioSeqUtils-manual/).
+#'
+#' @references [https://junjunlab.github.io/BioSeqUtils-manual/](https://junjunlab.github.io/BioSeqUtils-manual/)
+#' @references [https://github.com/junjunlab/BioSeqUtils](https://github.com/junjunlab/BioSeqUtils)
 #'
 #' @param Input_gtf A GTF file containing the gene annotation information
 #' with data frame format. Must be specified if you want to add gene annotation tracks.
 #' @param Input_gene A character vectors. Must be specified if you want to add
+#' @param upstream_extend Extend bases upstream for gene transcription start site,
+#' default 0, accepting one or more vectors.
+#' @param downstream_extend Extend bases downstream for gene transcription end site,
+#' default 0, accepting one or more vectors.
 #' gene annotation tracks.
 #' @param Input_bw A bigWig file from "loadBigWig" function containing the signal
 #' information for signal tracks.
 #' @param Input_loop A loop file from "loadloops" function containing the loop
 #' information for loop tracks.
+#' @param Loop_curve_geom the curve type for loop tracks, "geom_arch2"(default)
+#' or "geom_arch".
 #' @param Input_hic A Hi-C interaction file from "prepareHic" function containing
 #' the Hi-C interaction information for heatmap tracks.
 #' @param Input_bed A bed file from "loadBed" function containing the bed
@@ -32,7 +42,8 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' @param signal_layer_bw_params A list of parameters for configuring signal
 #' tracks created by bigWig files. Passed by "ggplot2::geom_rect" function.
 #' @param signal_layer_loop_params A list of parameters for configuring loop
-#' tracks created by loop files. Passed by "ggbio::geom_arch" function.
+#' tracks created by loop files. Passed by "ggbio::geom_arch" or "jjPlot::geom_arch2"
+#' function.
 #' @param signal_layer_heatmap_params A list of parameters for configuring
 #' heatmap tracks created by Hi-C interaction files. Passed by
 #' "ggplot2::geom_polygon" function.
@@ -149,12 +160,17 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' @export
 trackVisProMax <- function(Input_gtf = NULL,
                            Input_gene = NULL,
+                           upstream_extend = 0,
+                           downstream_extend = 0,
                            Input_bw = NULL,
                            Input_loop = NULL,
+                           Loop_curve_geom = "geom_arch2",
                            Input_hic = NULL,
                            Input_bed = NULL,
                            Input_junction = NULL,
-                           query_region = list(query_chr = NULL,query_start = NULL,query_end = NULL),
+                           query_region = list(query_chr = NULL,
+                                               query_start = NULL,
+                                               query_end = NULL),
                            signal_layer_bw_params = list(),
                            signal_layer_loop_params = list(),
                            signal_layer_heatmap_params = list(),
@@ -291,11 +307,14 @@ trackVisProMax <- function(Input_gtf = NULL,
 
     }else(
       # x = 1
+      # upstream_extend = 0
+      # downstream_extend = 0
       plyr::ldply(seq_along(Input_gene),function(x){
         tmp <- gtf %>%
           dplyr::filter(gene_name == Input_gene[x])
         chr <- as.character(unique(tmp$seqnames))
-        xmin = min(tmp$start);xmax = max(tmp$end)
+        xmin = min(tmp$start) - ifelse(length(upstream_extend) == 1,upstream_extend,upstream_extend[x])
+        xmax = max(tmp$end) + ifelse(length(downstream_extend) == 1,downstream_extend,downstream_extend[x])
 
         # dplyr::filter signals
         sig <- input_signal_file %>%
@@ -359,7 +378,8 @@ trackVisProMax <- function(Input_gtf = NULL,
       tmp <- gtf %>%
         dplyr::filter(gene_name == Input_gene[x])
       chr <- as.character(unique(tmp$seqnames))
-      xmin = min(tmp$start);xmax = max(tmp$end)
+      xmin = min(tmp$start) - ifelse(length(upstream_extend) == 1,upstream_extend,upstream_extend[x])
+      xmax = max(tmp$end) + ifelse(length(downstream_extend) == 1,downstream_extend,downstream_extend[x])
 
       # dplyr::filter signals
       # peak_width = 0.5
@@ -911,10 +931,39 @@ trackVisProMax <- function(Input_gtf = NULL,
         mutate(start = xlimit_range[1],end = xlimit_range[2])
     }else{
       segment.df <- plyr::ldply(1:nrow(segment.df),function(x){
-        tmp <- segment.df %>%
+        tmp <- segment.df[x,]
+        tmp <- tmp %>%
           mutate(start = xlimit_range[[x]][1],end = xlimit_range[[x]][2])
+        return(tmp)
       })
     }
+  }
+
+  # whether re-assign x limits for upstream_extend and downstream_extend
+  if(length(upstream_extend) == 1 & length(downstream_extend) == 1){
+    segment.df <- segment.df %>%
+      mutate(start = start - upstream_extend,end = end + downstream_extend)
+  }else if(length(upstream_extend) == 1 & length(downstream_extend) >= 1){
+    segment.df <- plyr::ldply(1:nrow(segment.df),function(x){
+      tmp <- segment.df[x,]
+      tmp <- tmp %>%
+        mutate(start = start - upstream_extend,end = end + downstream_extend[x])
+      return(tmp)
+    })
+  }else if(length(upstream_extend) >= 1 & length(downstream_extend) == 1){
+    segment.df <- plyr::ldply(1:nrow(segment.df),function(x){
+      tmp <- segment.df[x,]
+      tmp <- tmp %>%
+        mutate(start = start - upstream_extend[x],end = end + downstream_extend)
+      return(tmp)
+    })
+  }else{
+    segment.df <- plyr::ldply(1:nrow(segment.df),function(x){
+      tmp <- segment.df[x,]
+      tmp <- tmp %>%
+        mutate(start = start - upstream_extend[x],end = end + downstream_extend[x])
+      return(tmp)
+    })
   }
 
   # two segment lines position
@@ -1558,15 +1607,26 @@ trackVisProMax <- function(Input_gtf = NULL,
 
   # loop layer
   if(!is.null(Input_loop)){
-    signal_layer_geom_arch <- do.call(ggbio::geom_arch,
-                                      modifyList(
-                                        list(data = tmp2[which(tmp2$track_type == "loop"),],
-                                             mapping = aes(x = start,xend = end,
-                                                           height = score,
-                                                           color = score),
-                                             linewidth = 0.5,
-                                             guide = guide_legend(FALSE)),
-                                        signal_layer_loop_params))
+    if(Loop_curve_geom == "geom_arch"){
+      signal_layer_geom_arch <- do.call(ggbio::geom_arch,
+                                        modifyList(
+                                          list(data = tmp2[which(tmp2$track_type == "loop"),],
+                                               mapping = aes(x = start,xend = end,
+                                                             height = score,
+                                                             color = score),
+                                               linewidth = 0.5,
+                                               guide = guide_legend(FALSE)),
+                                          signal_layer_loop_params))
+    }else if(Loop_curve_geom == "geom_arch2"){
+      signal_layer_geom_arch <- do.call(jjPlot::geom_arch2,
+                                        modifyList(
+                                          list(data = tmp2[which(tmp2$track_type == "loop"),],
+                                               mapping = aes(x = start,xend = end,
+                                                             y = 0,yend = score,
+                                                             color = score)),
+                                          signal_layer_loop_params))
+    }
+
   }else{
     signal_layer_geom_arch <- NULL
   }
