@@ -1579,7 +1579,7 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
   # ==============================================================================
-  # 12_signal layer dplyr::select
+  # 12_signal layer
   # ==============================================================================
   # signal_layer_bw_params = list()
   # signal_layer_loop_params = list()
@@ -1753,16 +1753,31 @@ trackVisProMax <- function(Input_gtf = NULL,
     }else{
       # signal_layer_junction_params = list()
       # signal_layer_junction_label_params = list()
-      signal_layer_junction <- do.call(ggbio::geom_arch,
-                                       modifyList(
-                                         list(data = junc_data,
-                                              mapping = aes(x = start,xend = end,
-                                                            color = fileName,
-                                                            height = dist),
-                                              linewidth = 0.5,
-                                              show.legend = FALSE,
-                                              guide = guide_legend(FALSE)),
-                                         signal_layer_junction_params))
+      if(Loop_curve_geom == "geom_arch"){
+        signal_layer_junction <- do.call(ggbio::geom_arch,
+                                         modifyList(
+                                           list(data = junc_data,
+                                                mapping = aes(x = start,xend = end,
+                                                              color = fileName,
+                                                              height = dist),
+                                                linewidth = 0.5,
+                                                show.legend = FALSE,
+                                                guide = guide_legend(FALSE)),
+                                           signal_layer_junction_params))
+      }else if(Loop_curve_geom == "geom_arch2"){
+        signal_layer_junction <- do.call(jjPlot::geom_arch2,
+                                         modifyList(
+                                           list(data = junc_data,
+                                                mapping = aes(x = start,xend = end,
+                                                              y = 0,yend = dist,
+                                                              color = fileName),
+                                                linewidth = 0.5,
+                                                show.legend = FALSE),
+                                           signal_layer_junction_params))
+      }else{
+        message("Please supply 'geom_arch' or 'geom_arch2'!")
+      }
+
 
       signal_layer_junction_label <- do.call(geom_label,
                                              modifyList(
