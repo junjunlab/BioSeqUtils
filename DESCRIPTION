@@ -17,7 +17,7 @@ Imports:
     Biostrings,data.table,DescTools,dplyr,furrr,GenomicRanges,
     ggbio,ggh4x,ggnewscale,ggplot2,ggrepel,HiCcompare,jjAnno,
     jjPlot,magrittr,megadepth,methods,plotgardener,plyr,
-    plyranges,progress,purrr,RColorBrewer,reshape2,reticulate,
+    plyranges,progress,purrr,RColorBrewer,reticulate,
     rhdf5,rtracklayer,scales,tibble,tidyr,utils,zplyr
 Remotes:
   burchill/zplyr,

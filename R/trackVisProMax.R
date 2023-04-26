@@ -154,6 +154,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' all panel borders.
 #' @param xlimit_range Null or a numeric vector of values representing the x-axis
 #' limit range.
+#' @param Intron_line_type Line type for intron regions, "line"(default) or "chevron".
 #'
 #'
 #' @return GGPLOT
@@ -231,7 +232,8 @@ trackVisProMax <- function(Input_gtf = NULL,
                            trans_fill_col = NULL,
                            remove_chrom_panel_border = FALSE,
                            remove_all_panel_border = FALSE,
-                           xlimit_range = NULL
+                           xlimit_range = NULL,
+                           Intron_line_type = "line"
 ){
   options(warn=-1)
   # Suppress summarise info
@@ -825,18 +827,29 @@ trackVisProMax <- function(Input_gtf = NULL,
       # arrow_rel_len_params_list
       # arrow_rel_len_params_list <- list(n_division = NULL,rel_len = 0.1,abs_len = NULL)
 
-      # seg_data <- createSegment(xPos = c(tmp1$start,tmp1$end),
-      #                           yPos = rep(ypos,2),
-      #                           n_division = arrow_rel_len_params_list$n_division,
-      #                           abs_len = arrow_rel_len_params_list$abs_len,
-      #                           rel_len = arrow_rel_len_params_list$rel_len) %>%
-      #   mutate(transcript_id = tmp1$transcript_id)
-      seg_data <-
-        do.call(createSegment,modifyList(list(xPos = c(tmp1$start,tmp1$end),
-                                              yPos = rep(ypos,2),
-                                              rel_len = 0.08),
-                                         arrow_rel_len_params_list)) %>%
-        mutate(transcript_id = tmp1$transcript_id)
+      # choose intron line type
+      # Intron_line_type = "chevron"
+      if(Intron_line_type == "chevron"){
+        tmp_exon <- gtf %>%
+          filter(transcript_id ==  tmp1$transcript_id & type == "exon") %>%
+          arrange(start,end)
+
+        xstart = tmp_exon$end[1:nrow(tmp_exon) - 1]
+        xend = tmp_exon$start[2:nrow(tmp_exon)]
+        seg_data <- data.frame(x = c(xstart,(xstart + xend)/2),
+                               xend = c((xstart + xend)/2,xend),
+                               y = rep(c(ypos,ypos + exon_width*0.25),each = nrow(tmp_exon) - 1),
+                               yend = rev(rep(c(ypos,ypos + exon_width*0.25),each = nrow(tmp_exon) - 1)),
+                               transcript_id = tmp1$transcript_id
+        )
+      }else if(Intron_line_type == "line"){
+        seg_data <-
+          do.call(createSegment,modifyList(list(xPos = c(tmp1$start,tmp1$end),
+                                                yPos = rep(ypos,2),
+                                                rel_len = 0.08),
+                                           arrow_rel_len_params_list)) %>%
+          mutate(transcript_id = tmp1$transcript_id)
+      }
 
       # get group info
       seg_data$gene <- tmp1$gene
@@ -847,6 +860,8 @@ trackVisProMax <- function(Input_gtf = NULL,
                                       gene_group2 = unique(tmp1$gene_group2),
                                       sample_group = unique(tmp1$sample_group),
                                       sample_group2 = unique(tmp1$sample_group2))
+
+      return(seg_data)
     }) -> seg_arrow
 
     return(seg_arrow)
@@ -861,25 +876,27 @@ trackVisProMax <- function(Input_gtf = NULL,
   # trans_exon_arrow_params = list(length = 1,fill = "grey60",color = "grey60",linewidth = 0.75)
   trans_arrow_layer <- lapply(unique(final_arrow_data$transcript_id), function(x){
     tmp <- final_arrow_data[which(final_arrow_data$transcript_id == x),]
-    # geom_segment(data = tmp,
-    #              aes(x = x,xend = xend,
-    #                  y = y,yend = yend),
-    #              linewidth = trans_exon_arrow_params$linewidth,
-    #              arrow = arrow(type = "closed",
-    #                            length = unit(trans_exon_arrow_params$length,"mm"),
-    #                            ends = unique(tmp$ends)),
-    #              arrow.fill = trans_exon_arrow_params$fill,
-    #              color = trans_exon_arrow_params$color)
-    do.call(geom_segment,
-            modifyList(list(data = tmp,
-                            aes(x = x,xend = xend,
-                                y = y,yend = yend),
-                            linewidth = 0.75,
-                            arrow = arrow(type = "closed",
-                                          length = unit(1,"mm"),
-                                          ends = unique(tmp$ends)),
-                            arrow.fill = "grey60",
-                            color = "grey60"),trans_exon_arrow_params))
+
+    # arrow layer
+    if(Intron_line_type == "chevron"){
+      do.call(geom_segment,
+              modifyList(list(data = tmp,
+                              aes(x = x,xend = xend,
+                                  y = y,yend = yend),
+                              linewidth = 0.75,
+                              color = "grey60"),trans_exon_arrow_params))
+    }else{
+      do.call(geom_segment,
+              modifyList(list(data = tmp,
+                              aes(x = x,xend = xend,
+                                  y = y,yend = yend),
+                              linewidth = 0.75,
+                              arrow = arrow(type = "closed",
+                                            length = unit(1,"mm"),
+                                            ends = unique(tmp$ends)),
+                              arrow.fill = "grey60",
+                              color = "grey60"),trans_exon_arrow_params))
+    }
   })
 
   # trans_struct_layer
