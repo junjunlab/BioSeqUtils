@@ -78,6 +78,6 @@ def write_fasta(faDict,fileName,lineBases = 80):
 # one step to perform sequnence extraction from genome data
 def py_extractSequence(gtf_file,genome_file,transcript_id,new_id,type,out_file):
     target_idDict = id_dict(transcript_id,new_id)
-    genome_my = Fasta(genome_file)
+    genome_my = Fasta(genome_file, sequence_always_upper=True)
     seq_dict = extract_sequnence(gtf_file,genome_my,target_idDict,type=type)
     write_fasta(seq_dict,out_file)

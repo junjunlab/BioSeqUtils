@@ -647,8 +647,14 @@ trackVisProMax <- function(Input_gtf = NULL,
     }
 
     # dplyr::filter top transcripts
+    if("exon" %in% new_tmp$type){
+      get_type = "exon"
+    }else{
+      get_type = "CDS"
+    }
+
     trans_len <- new_tmp %>%
-      dplyr::filter(type == "exon") %>%
+      dplyr::filter(type == get_type) %>%
       dplyr::group_by(transcript_id,type) %>%
       dplyr::summarise(exon_len = sum(width)) %>%
       dplyr::arrange(desc(exon_len)) %>% ungroup()
