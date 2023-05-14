@@ -44,15 +44,29 @@ pyExtractSeq <- function(gtf_file = NULL,
     # import pyfaidx
     tryCatch({
       py <- reticulate::import("pyfaidx")
-      print(py)
+      # print(py)
     }, error = function(e) {
       cat("Error: pyfaidx is not available.\n")
     })
 
+    # sort gtf first
+    gtf <- rtracklayer::import.gff(gtf_file,format = "gtf")
+
+    # sort
+    sorted_gtf <- gtf |> data.frame() |>
+      dplyr::filter(type %in% "exon") |>
+      dplyr::arrange(seqnames,gene_name,gene_id,transcript_id,start,end)
+
+    # output
+    output_name = paste(gtf_file,".sorted.gtf",sep = "")
+    rtracklayer::export.gff(sorted_gtf,
+                            con = output_name,
+                            format = "gtf")
+
     # run code
     pyscript.path = system.file("extdata", "getSeq.py", package = "BioSeqUtils")
     reticulate::source_python(pyscript.path)
-    reticulate::py$py_extractSequence(gtf_file = gtf_file,
+    reticulate::py$py_extractSequence(gtf_file = output_name,
                                       genome_file = genome_file,
                                       transcript_id = reticulate::r_to_py(transcript_id),
                                       new_id = reticulate::r_to_py(new_id),
