@@ -1,4 +1,4 @@
-import pyfaidx
+from pyfaidx import Fasta
 import re
 
 # save id in dictionary
