@@ -77,7 +77,8 @@ trackVisProMax(
   remove_chrom_panel_border = FALSE,
   remove_all_panel_border = FALSE,
   xlimit_range = NULL,
-  Intron_line_type = "line"
+  Intron_line_type = "line",
+  show_y_ticks = FALSE
 )
 }
 \arguments{
@@ -291,6 +292,8 @@ all panel borders.}
 limit range.}
 
 \item{Intron_line_type}{Line type for intron regions, "line"(default) or "chevron".}
+
+\item{show_y_ticks}{Whether show Y axis ticks instead of range label, default FALSE.}
 }
 \value{
 GGPLOT

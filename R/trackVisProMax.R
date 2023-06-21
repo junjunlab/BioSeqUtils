@@ -155,6 +155,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' @param xlimit_range Null or a numeric vector of values representing the x-axis
 #' limit range.
 #' @param Intron_line_type Line type for intron regions, "line"(default) or "chevron".
+#' @param show_y_ticks Whether show Y axis ticks instead of range label, default FALSE.
 #'
 #'
 #' @return GGPLOT
@@ -233,7 +234,8 @@ trackVisProMax <- function(Input_gtf = NULL,
                            remove_chrom_panel_border = FALSE,
                            remove_all_panel_border = FALSE,
                            xlimit_range = NULL,
-                           Intron_line_type = "line"
+                           Intron_line_type = "line",
+                           show_y_ticks = FALSE
 ){
   options(warn=-1)
   # Suppress summarise info
@@ -1900,6 +1902,17 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
   # ============================================================
+  # whether show y axis ticks
+  if(show_y_ticks == TRUE){
+    range_label_layer <- NULL
+    axis.text.y <- element_text()
+    axis.ticks.y <- element_line()
+  }else{
+    axis.text.y <- element_blank()
+    axis.ticks.y <- element_blank()
+  }
+
+  # ============================================================
   # combine all layers
   pmain <-
     ggplot() +
@@ -1954,8 +1967,8 @@ trackVisProMax <- function(Input_gtf = NULL,
           panel.spacing.x = unit(panel.spacing[1],"lines"),
           strip.text.y.left = element_text(angle = 0,face = "bold",hjust = 1),
           strip.text.x = element_text(face = "bold.italic"),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
+          axis.text.y = axis.text.y,
+          axis.ticks.y = axis.ticks.y,
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           strip.placement = "outside",
