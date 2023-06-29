@@ -49,13 +49,18 @@ def extract_sequnence(gtfFile,genomeObj,target_idDict,type = "exon"):
             # get sequncence form genome sequence
             if newkey != None:
                 chrom,start,end = fields[0],int(fields[3]),int(fields[4])
-                type_seq = genomeObj[chrom][start-1:end]
-                # wthether + strand or - strand
-                if fields[6] == "+":
-                    seq_dict[newkey] += str(type_seq)
+                
+                # check whether genome has this chromosome
+                if chrom in genomeObj.keys():
+                    type_seq = genomeObj[chrom][start-1:end]
+                    # wthether + strand or - strand
+                    if fields[6] == "+":
+                        seq_dict[newkey] += str(type_seq)
+                    else:
+                        type_seq = type_seq.complement.reverse
+                        seq_dict[newkey] = str(type_seq) + str(seq_dict[newkey])
                 else:
-                    type_seq = type_seq.complement.reverse
-                    seq_dict[newkey] = str(type_seq) + str(seq_dict[newkey])
+                    continue
     return seq_dict
                     
 
