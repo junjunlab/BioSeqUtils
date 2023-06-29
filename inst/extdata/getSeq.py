@@ -71,11 +71,12 @@ def write_fasta(faDict,fileName,lineBases = 80):
 
     # separate sequences
     for key,val in faDict.items():
-        output_fa.write(key + '\n')
-        while len(val) > lineBases:
-            output_fa.write(val[0:lineBases] + '\n')
-            val = val[lineBases:len(val)]
-        output_fa.write(val + '\n')
+        if len(val) != 0:
+            output_fa.write(key + '\n')
+            while len(val) > lineBases:
+                output_fa.write(val[0:lineBases] + '\n')
+                val = val[lineBases:len(val)]
+            output_fa.write(val + '\n')
 
     # file close
     output_fa.close()
