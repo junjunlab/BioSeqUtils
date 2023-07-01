@@ -55,7 +55,7 @@ loadGenomeGTF <- function(gtfPath = NULL,
                           format = "gtf",
                           filterProtein = FALSE){
   # load gtf
-  ncbiRefSeq <- rtracklayer::import.gff(gtfPath,format = format)
+  gtf_input <- rtracklayer::import.gff(gtfPath,format = format)
   # as.data.frame()
 
   # load genome sequences
@@ -68,10 +68,16 @@ loadGenomeGTF <- function(gtfPath = NULL,
 
   # whether get protein
   if(filterProtein == TRUE){
-    protein <- ncbiRefSeq[which(ncbiRefSeq$type == "CDS"),]
-    gtf <- ncbiRefSeq[which(ncbiRefSeq$gene_id %in% unique(protein$gene_id)),]
+    if("ccds_id" %in% colnames(data.frame(gtf_input))){
+      protein <- gtf_input[which(gtf_input$ccds_id != "NA"),]
+      gtf <- gtf_input[which(gtf_input$transcript_id %in% unique(protein$transcript_id)),]
+    }else{
+      protein <- gtf_input[which(gtf_input$type == "CDS"),]
+      gtf <- gtf_input[which(gtf_input$gene_id %in% unique(protein$gene_id)),]
+    }
+
   }else{
-    gtf <- ncbiRefSeq
+    gtf <- gtf_input
   }
 
   # # extarct all genes information from GTF using julia
