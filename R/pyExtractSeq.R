@@ -54,7 +54,7 @@ pyExtractSeq <- function(gtf_file = NULL,
 
     # sort
     sorted_gtf <- gtf |> data.frame() |>
-      dplyr::filter(type %in% "exon") |>
+      dplyr::filter(type %in% type) |>
       dplyr::arrange(seqnames,gene_name,gene_id,transcript_id,start,end)
 
     # output

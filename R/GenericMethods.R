@@ -249,8 +249,9 @@ setMethod("getTransInfo",
               tidyr::spread(.,type,typelen,fill = 0) %>%
               dplyr::mutate(gtype = dplyr::if_else(`5UTR` > 0 | `CDS` > 0,"CD","NC")) %>%
               dplyr::mutate(cdsst = dplyr::if_else(`gtype` == "CD",`5UTR` + 1,1),
-                            cdsed = dplyr::if_else(`gtype` == "CD",`cdsst` + `CDS`,exon),
-                            tname = paste(gene_name,gene_id,transcript_id,cdsst,cdsed,exon,gtype,sep = sep)) %>%
+                            cdsed = dplyr::if_else(`gtype` == "CD",`cdsst` + `CDS`,exon)) %>%
+              dplyr::mutate(cdsed = dplyr::if_else(cdsed > exon,cdsed - 3,cdsed)) %>%
+              dplyr::mutate(tname = paste(gene_name,gene_id,transcript_id,cdsst,cdsed,exon,gtype,sep = sep)) %>%
               dplyr::filter(gene_id != "test")
 
             # ===============================================================================
