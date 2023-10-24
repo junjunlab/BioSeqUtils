@@ -156,7 +156,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' limit range.
 #' @param Intron_line_type Line type for intron regions, "line"(default) or "chevron".
 #' @param show_y_ticks Whether show Y axis ticks instead of range label, default FALSE.
-#'
+#' @param arrow.line.ratio the ratio of the "trans" panel arrow lines length, default 3.
 #'
 #' @return GGPLOT
 #' @export
@@ -235,8 +235,8 @@ trackVisProMax <- function(Input_gtf = NULL,
                            remove_all_panel_border = FALSE,
                            xlimit_range = NULL,
                            Intron_line_type = "line",
-                           show_y_ticks = FALSE
-){
+                           show_y_ticks = FALSE,
+                           arrow.line.ratio = 3){
   options(warn=-1)
   # Suppress summarise info
   options(dplyr.summarise.inform = FALSE)
@@ -410,6 +410,30 @@ trackVisProMax <- function(Input_gtf = NULL,
     }) -> bed.df
   }
 
+
+  # ==============================================================================
+  # deal with samples without values in target regions
+  # ==============================================================================
+  sp <- unique(bw$fileName)
+
+  # g = "MYC"
+  purrr::map_df(Input_gene,function(g){
+    tmp <- subset(region.df,gene == g)
+
+    diff.sp <- setdiff(sp,unique(tmp$fileName))
+
+    if(length(diff.sp) != 0){
+      new <- tmp[1:length(diff.sp),]
+      new$fileName <- diff.sp
+      new$score <- 0
+
+      return(new)
+    }else{
+      return(NULL)
+    }
+  }) -> tmp.lost.samp
+
+  region.df <- rbind(region.df,tmp.lost.samp)
   # ==============================================================================
   # 2_add trans and chromo facet
   # ==============================================================================
@@ -992,9 +1016,10 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
   # two segment lines position
+  # arrow.line.ratio = 3
   segment.df <- segment.df %>%
-    mutate(ar1_end = start + (end - start)/3,
-           ar2_start = end - (end - start)/3)
+    mutate(ar1_end = start + (end - start)/arrow.line.ratio,
+           ar2_start = end - (end - start)/arrow.line.ratio)
 
   # arrow data on gene structures
   # x = 1
@@ -1007,8 +1032,8 @@ trackVisProMax <- function(Input_gtf = NULL,
     # t_num = table(data.frame(unique(transcript.df[,c("gene","transcript_id")]))$gene)
     t_num = table(data.frame(unique(final_arrow_data[,c("gene","y")]))$gene)
 
-    res <- data.frame(start = c(tmp$start,tmp$end - (tmp$end - tmp$start)/3),
-                      end = c(tmp$start + (tmp$end - tmp$start)/3,tmp$end)) %>%
+    res <- data.frame(start = c(tmp$start,tmp$end - (tmp$end - tmp$start)/arrow.line.ratio),
+                      end = c(tmp$start + (tmp$end - tmp$start)/arrow.line.ratio,tmp$end)) %>%
       mutate(fileName = tmp$fileName,gene = tmp$gene,strand = tmp$strand,
              .before = start) %>%
       mutate(label = paste(tmp$seqnames,": ",round((tmp$end - tmp$start)/10^3,digits = 2),
