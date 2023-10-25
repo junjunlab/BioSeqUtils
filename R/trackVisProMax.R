@@ -7,7 +7,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 
 #' Visualize genomic data using BioSeqUtils package
 #'
-#' @author JunZhang
+#' @author Jun Zhang
 #'
 #' This function generates a multi-track visualization of different genomic data
 #' types, including gene annotation, signal tracks, loops, Hi-C interactions, bed
@@ -1061,12 +1061,7 @@ trackVisProMax <- function(Input_gtf = NULL,
   # gene_dist_mark_params = list(linewidth = 0.75,color = "black",length = 2)
   seg_arrow_layer <- lapply(unique(arrow.df$gene), function(x){
     tmp <- arrow.df %>% dplyr::filter(gene == x)
-    # geom_segment(data = tmp,
-    #              aes(x = start,xend = end,
-    #                  y = y,yend = y),linewidth = gene_dist_mark_params$linewidth,
-    #              color = gene_dist_mark_params$color,
-    #              arrow = arrow(ends = tmp$ends,
-    #                            length = unit(gene_dist_mark_params$length,"mm")))
+
     seg_ar <-
       do.call(geom_segment,
               modifyList(list(data = tmp,
@@ -1076,7 +1071,7 @@ trackVisProMax <- function(Input_gtf = NULL,
                               ),
                               linewidth = 0.3,
                               color = "black",
-                              arrow = arrow(ends = tmp$ends,
+                              arrow = arrow(ends = tmp$ends,type = "closed",
                                             length = unit(2,"mm"))),
                          gene_dist_mark_params))
     return(seg_ar)

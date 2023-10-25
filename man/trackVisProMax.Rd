@@ -310,7 +310,7 @@ Visualize genomic data using BioSeqUtils package
 \url{https://github.com/junjunlab/BioSeqUtils}
 }
 \author{
-JunZhang
+Jun Zhang
 
 This function generates a multi-track visualization of different genomic data
 types, including gene annotation, signal tracks, loops, Hi-C interactions, bed
