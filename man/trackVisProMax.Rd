@@ -79,7 +79,8 @@ trackVisProMax(
   xlimit_range = NULL,
   Intron_line_type = "line",
   show_y_ticks = FALSE,
-  arrow.line.ratio = 3
+  arrow.line.ratio = 3,
+  add.nested.line = TRUE
 )
 }
 \arguments{
@@ -297,6 +298,8 @@ limit range.}
 \item{show_y_ticks}{Whether show Y axis ticks instead of range label, default FALSE.}
 
 \item{arrow.line.ratio}{the ratio of the "trans" panel arrow lines length, default 3.}
+
+\item{add.nested.line}{Whether add nested line for strips, default TRUE.}
 }
 \value{
 GGPLOT

@@ -157,6 +157,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' @param Intron_line_type Line type for intron regions, "line"(default) or "chevron".
 #' @param show_y_ticks Whether show Y axis ticks instead of range label, default FALSE.
 #' @param arrow.line.ratio the ratio of the "trans" panel arrow lines length, default 3.
+#' @param add.nested.line Whether add nested line for strips, default TRUE.
 #'
 #' @return GGPLOT
 #' @export
@@ -236,7 +237,8 @@ trackVisProMax <- function(Input_gtf = NULL,
                            xlimit_range = NULL,
                            Intron_line_type = "line",
                            show_y_ticks = FALSE,
-                           arrow.line.ratio = 3){
+                           arrow.line.ratio = 3,
+                           add.nested.line = TRUE){
   options(warn=-1)
   # Suppress summarise info
   options(dplyr.summarise.inform = FALSE)
@@ -1589,13 +1591,27 @@ trackVisProMax <- function(Input_gtf = NULL,
   }
 
 
+  # whether add nested line
+  if(add.nested.line == TRUE){
+    strip.background = element_blank()
+    ggh4x.facet.nestline = element_line(colour = "black")
+    nest_line = element_line(linetype = "solid")
+    hjust = 1
+  }else{
+    strip.background = ggplot2::element_rect(fill = "grey90")
+    ggh4x.facet.nestline = element_line()
+    nest_line = element_line()
+    hjust = 0.5
+  }
+
   facet_layer <- do.call(ggh4x::facet_nested,
                          modifyList(list(facet_var,
                                          scales = "free",
-                                         nest_line = element_line(linetype = "solid"),
+                                         nest_line = nest_line,
                                          independent = "y",
                                          switch = "y",
                                          strip = facet_strips,
+                                         solo_line = TRUE,
                                          labeller = labeller(gene = new_column_label)),
                                     list()))
 
@@ -1985,15 +2001,15 @@ trackVisProMax <- function(Input_gtf = NULL,
     theme(panel.grid = element_blank(),
           panel.spacing.y = unit(panel.spacing[2],"lines"),
           panel.spacing.x = unit(panel.spacing[1],"lines"),
-          strip.text.y.left = element_text(angle = 0,face = "bold",hjust = 1),
+          strip.text.y.left = element_text(angle = 0,face = "bold",hjust = hjust),
           strip.text.x = element_text(face = "bold.italic"),
           axis.text.y = axis.text.y,
           axis.ticks.y = axis.ticks.y,
           axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
           strip.placement = "outside",
-          strip.background = element_blank(),
-          ggh4x.facet.nestline = element_line(colour = "black")) +
+          strip.background = strip.background,
+          ggh4x.facet.nestline = ggh4x.facet.nestline) +
     xlab("") + ylab("")
 
   # transcript.df %>% group_by(gene) %>%
