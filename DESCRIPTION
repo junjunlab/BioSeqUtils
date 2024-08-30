@@ -12,7 +12,7 @@ Description: For Extracting multiple different features sequence of gene, here s
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Imports: 
     Biostrings,data.table,DescTools,dplyr,furrr,GenomicRanges,
     ggbio,ggh4x,ggnewscale,ggplot2,ggrepel,HiCcompare,jjAnno,

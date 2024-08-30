@@ -159,6 +159,8 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' @param arrow.line.ratio the ratio of the "trans" panel arrow lines length, default 3.
 #' @param add.nested.line Whether add nested line for strips, default TRUE.
 #'
+#' @import ggplot2
+#'
 #' @return GGPLOT
 #' @export
 trackVisProMax <- function(Input_gtf = NULL,
@@ -1660,8 +1662,17 @@ trackVisProMax <- function(Input_gtf = NULL,
                                              color = NA,size = 0,
                                              show.legend = FALSE),
                                         signal_layer_bw_params))
+
+    # add baseline layer
+    if(remove_all_panel_border == TRUE){
+      baseline_layer <- geom_hline(yintercept = 0,lty = "solid",color = "black",linewidth = 1)
+    }else{
+      baseline_layer <- NULL
+    }
+
   }else{
     signal_layer_geom_rect <- NULL
+    baseline_layer <- NULL
   }
 
   # loop layer
@@ -1961,6 +1972,7 @@ trackVisProMax <- function(Input_gtf = NULL,
     ggnewscale::new_scale_fill() +
     # ggnewscale::new_scale_color() +
     signal_layer_geom_rect +
+    baseline_layer +
     scale_fill_manual(values = c(sample_fill_col,useless_col),
                       name = "") +
     # scale_color_manual(values = ggplot2::alpha(c(sample_fill_col,useless_col),
