@@ -158,6 +158,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' @param show_y_ticks Whether show Y axis ticks instead of range label, default FALSE.
 #' @param arrow.line.ratio the ratio of the "trans" panel arrow lines length, default 3.
 #' @param add.nested.line Whether add nested line for strips, default TRUE.
+#' @param baseline_size The base line size when remove_all_panel_border is TRUE, default 0.5.
 #'
 #' @import ggplot2
 #'
@@ -240,7 +241,8 @@ trackVisProMax <- function(Input_gtf = NULL,
                            Intron_line_type = "line",
                            show_y_ticks = FALSE,
                            arrow.line.ratio = 3,
-                           add.nested.line = TRUE){
+                           add.nested.line = TRUE,
+                           baseline_size = 0.5){
   options(warn=-1)
   # Suppress summarise info
   options(dplyr.summarise.inform = FALSE)
@@ -1665,7 +1667,7 @@ trackVisProMax <- function(Input_gtf = NULL,
 
     # add baseline layer
     if(remove_all_panel_border == TRUE){
-      baseline_layer <- geom_hline(yintercept = 0,lty = "solid",color = "black",linewidth = 1)
+      baseline_layer <- geom_hline(yintercept = 0,lty = "solid",color = "black",linewidth = baseline_size)
     }else{
       baseline_layer <- NULL
     }

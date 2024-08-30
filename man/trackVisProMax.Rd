@@ -80,7 +80,8 @@ trackVisProMax(
   Intron_line_type = "line",
   show_y_ticks = FALSE,
   arrow.line.ratio = 3,
-  add.nested.line = TRUE
+  add.nested.line = TRUE,
+  baseline_size = 0.5
 )
 }
 \arguments{
@@ -300,6 +301,8 @@ limit range.}
 \item{arrow.line.ratio}{the ratio of the "trans" panel arrow lines length, default 3.}
 
 \item{add.nested.line}{Whether add nested line for strips, default TRUE.}
+
+\item{baseline_size}{The base line size when remove_all_panel_border is TRUE, default 0.5.}
 }
 \value{
 GGPLOT
