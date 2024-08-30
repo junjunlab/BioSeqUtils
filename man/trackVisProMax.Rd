@@ -81,7 +81,7 @@ trackVisProMax(
   show_y_ticks = FALSE,
   arrow.line.ratio = 3,
   add.nested.line = TRUE,
-  baseline_size = 0.5
+  baseline_size = 0.3
 )
 }
 \arguments{
@@ -302,7 +302,7 @@ limit range.}
 
 \item{add.nested.line}{Whether add nested line for strips, default TRUE.}
 
-\item{baseline_size}{The base line size when remove_all_panel_border is TRUE, default 0.5.}
+\item{baseline_size}{The base line size when remove_all_panel_border is TRUE, default 0.3.}
 }
 \value{
 GGPLOT
