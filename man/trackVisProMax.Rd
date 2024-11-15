@@ -292,7 +292,7 @@ the panel border for the chromosome track.}
 all panel borders.}
 
 \item{xlimit_range}{Null or a numeric vector of values representing the x-axis
-limit range.}
+limit range or a list containing two vectors ranges for each gene.}
 
 \item{Intron_line_type}{Line type for intron regions, "line"(default) or "chevron".}
 

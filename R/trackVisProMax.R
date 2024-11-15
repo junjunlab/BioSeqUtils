@@ -153,7 +153,7 @@ globalVariables(c("Freq","dist", "element_line", "exon_len", "facetted_pos_scale
 #' @param remove_all_panel_border A logical value indicating whether to remove
 #' all panel borders.
 #' @param xlimit_range Null or a numeric vector of values representing the x-axis
-#' limit range.
+#' limit range or a list containing two vectors ranges for each gene.
 #' @param Intron_line_type Line type for intron regions, "line"(default) or "chevron".
 #' @param show_y_ticks Whether show Y axis ticks instead of range label, default FALSE.
 #' @param arrow.line.ratio the ratio of the "trans" panel arrow lines length, default 3.
@@ -256,6 +256,16 @@ trackVisProMax <- function(Input_gtf = NULL,
   heatmap <- Input_hic
   junction <- Input_junction
 
+  # check chr prefix
+  chr_check <- startsWith(as.character(gtf$seqnames[1]),"chr") & startsWith(as.character(bw$seqnames[1]),"chr")
+  num_check <- !startsWith(as.character(gtf$seqnames[1]),"chr") & !startsWith(as.character(bw$seqnames[1]),"chr")
+
+  if(chr_check | num_check){
+    message("Seqnames prefix for gtf and bigwig files are same.")
+  }else{
+    message("Seqnames prefix for gtf and bigwig files are not same, please check!")
+  }
+
   # Input_bed <- bed_df
   # bed <- Input_bed
 
@@ -319,20 +329,58 @@ trackVisProMax <- function(Input_gtf = NULL,
       # x = 1
       # upstream_extend = 0
       # downstream_extend = 0
-      plyr::ldply(seq_along(Input_gene),function(x){
-        tmp <- gtf %>%
-          dplyr::filter(gene_name == Input_gene[x])
-        chr <- as.character(unique(tmp$seqnames))
-        xmin = min(tmp$start) - ifelse(length(upstream_extend) == 1,upstream_extend,upstream_extend[x])
-        xmax = max(tmp$end) + ifelse(length(downstream_extend) == 1,downstream_extend,downstream_extend[x])
+      if(is.null(xlimit_range)){
+        plyr::ldply(seq_along(Input_gene),function(x){
+          tmp <- gtf %>%
+            dplyr::filter(gene_name == Input_gene[x])
+          chr <- as.character(unique(tmp$seqnames))
+          xmin = min(tmp$start) - ifelse(length(upstream_extend) == 1,upstream_extend,upstream_extend[x])
+          xmax = max(tmp$end) + ifelse(length(downstream_extend) == 1,downstream_extend,downstream_extend[x])
 
-        # dplyr::filter signals
-        sig <- input_signal_file %>%
-          dplyr::filter(seqnames %in% chr) %>%
-          dplyr::filter(start >= xmin & end <= xmax) %>%
-          mutate(gene = Input_gene[x])
-        return(sig)
-      }) -> region.df
+          # dplyr::filter signals
+          sig <- input_signal_file %>%
+            dplyr::filter(seqnames %in% chr) %>%
+            dplyr::filter(start >= xmin & end <= xmax) %>%
+            mutate(gene = Input_gene[x])
+          return(sig)
+        }) -> region.df
+      }else{
+        # add signal data if xlimit_range is not null
+        if(is.numeric(xlimit_range) & length(xlimit_range) == 2){
+          plyr::ldply(seq_along(Input_gene),function(x){
+            tmp <- gtf %>%
+              dplyr::filter(gene_name == Input_gene[x])
+            chr <- as.character(unique(tmp$seqnames))
+
+            xmin = xlimit_range[1] - ifelse(length(upstream_extend) == 1,upstream_extend,upstream_extend[x])
+            xmax = xlimit_range[2] + ifelse(length(downstream_extend) == 1,downstream_extend,downstream_extend[x])
+
+            # dplyr::filter signals
+            sig <- input_signal_file %>%
+              dplyr::filter(seqnames %in% chr) %>%
+              dplyr::filter(start >= xmin & end <= xmax) %>%
+              mutate(gene = Input_gene[x])
+            return(sig)
+          }) -> region.df
+        }else{
+          plyr::ldply(seq_along(Input_gene),function(x){
+            tmp <- gtf %>%
+              dplyr::filter(gene_name == Input_gene[x])
+            chr <- as.character(unique(tmp$seqnames))
+            xmin = xlimit_range[[x]][1] - ifelse(length(upstream_extend) == 1,upstream_extend,upstream_extend[x])
+            xmax = xlimit_range[[x]][2] + ifelse(length(downstream_extend) == 1,downstream_extend,downstream_extend[x])
+
+            # dplyr::filter signals
+            sig <- input_signal_file %>%
+              dplyr::filter(seqnames %in% chr) %>%
+              dplyr::filter(start >= xmin & end <= xmax) %>%
+              mutate(gene = Input_gene[x])
+            return(sig)
+          }) -> region.df
+        }
+
+      }
+
     )
   }else{
     # region.df <- NULL
@@ -646,9 +694,36 @@ trackVisProMax <- function(Input_gtf = NULL,
       return(tmp)
     })
   }else{
-    tmp_gtf <- gtf %>%
-      dplyr::filter(gene_name %in% Input_gene & type != "gene") %>%
-      mutate(gene = gene_name)
+    # filter gene if xlimit_range defined
+    if(!is.null(xlimit_range) & is.numeric(xlimit_range) & length(xlimit_range) == 2){
+      tmp_gtf <- gtf %>%
+        dplyr::filter(gene_name %in% Input_gene & type != "gene") %>%
+        mutate(gene = gene_name)
+
+      xmin = xlimit_range[1] - ifelse(length(upstream_extend) == 1,upstream_extend,0)
+      xmax = xlimit_range[2] + ifelse(length(downstream_extend) == 1,downstream_extend,0)
+
+      tmp_gtf <- gtf %>%
+        dplyr::filter(seqnames %in% unique(tmp_gtf$seqnames) & start >= xmin & end <= xmax & type != "gene") %>%
+        mutate(gene = Input_gene)
+    }else if(!is.null(xlimit_range) & inherits(xlimit_range,"list")){
+      tmp_gtf <- plyr::ldply(seq_along(Input_gene),function(x){
+        gtf_tmp <- gtf %>%
+          dplyr::filter(gene_name %in% Input_gene[x] & type != "gene") %>%
+          mutate(gene = gene_name)
+
+        xmin = xlimit_range[[x]][1] - ifelse(length(upstream_extend) == 1,upstream_extend,upstream_extend[x])
+        xmax = xlimit_range[[x]][2] + ifelse(length(downstream_extend) == 1,downstream_extend,downstream_extend[x])
+
+        tmp_gtf <- gtf %>%
+          dplyr::filter(seqnames %in% unique(gtf_tmp$seqnames) & start >= xmin & end <= xmax & type != "gene") %>%
+          mutate(gene = Input_gene[x])
+      })
+    }else{
+      tmp_gtf <- gtf %>%
+        dplyr::filter(gene_name %in% Input_gene & type != "gene") %>%
+        mutate(gene = gene_name)
+    }
   }
 
   # get gene id
@@ -718,7 +793,18 @@ trackVisProMax <- function(Input_gtf = NULL,
         # }
       }
 
-      tmp <- filtered_trans %>% dplyr::filter(transcript_id %in% rev(tid)[x]) %>%
+      tmp <- filtered_trans %>% dplyr::filter(transcript_id %in% rev(tid)[x])
+
+      # add transcript info if no type is "transcript"
+      if(!('transcript' %in% unique(tmp$type))){
+        tid_df <- gtf %>%
+          dplyr::filter(transcript_id %in% unique(tmp$transcript_id) & type == "transcript") %>%
+          dplyr::mutate(gene = gene_name)
+
+        tmp <- dplyr::bind_rows(tmp,tid_df)
+      }
+
+      tmp <- tmp %>%
         mutate(ymin = if_else(type %in% c("5UTR","five_prime_utr","3UTR","three_prime_utr"),
                               y_p - exon_width*0.25,y_p - exon_width*0.5),
                ymax = if_else(type %in% c("5UTR","five_prime_utr","3UTR","three_prime_utr"),
@@ -740,7 +826,11 @@ trackVisProMax <- function(Input_gtf = NULL,
       # trans_pos <- trans_pos %>% mutate(gene = levels(tmp2$gene)[idx],fileName = "trans")
       trans_pos <- trans_pos %>% mutate(fileName = "trans")
     }else{
-      trans_pos <- trans_pos %>% mutate(gene = gene_name,fileName = "trans")
+      if(!is.null(xlimit_range)){
+        trans_pos <- trans_pos %>% mutate(fileName = "trans")
+      }else{
+        trans_pos <- trans_pos %>% mutate(gene = gene_name,fileName = "trans")
+      }
     }
 
     if(!is.null(sample_group_info)){
@@ -795,7 +885,12 @@ trackVisProMax <- function(Input_gtf = NULL,
 
   # order
   transcript.df$fileName <- factor(transcript.df$fileName,levels = levels(tmp2$fileName))
+
   transcript.df$gene <- factor(transcript.df$gene,levels = levels(tmp2$gene))
+
+  # if(is.null(xlimit_range)){
+  #   transcript.df$gene <- factor(transcript.df$gene,levels = levels(tmp2$gene))
+  # }
 
   # =============================================
   # gene label
