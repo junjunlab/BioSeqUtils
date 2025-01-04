@@ -257,8 +257,15 @@ trackVisProMax <- function(Input_gtf = NULL,
   junction <- Input_junction
 
   # check chr prefix
-  chr_check <- startsWith(as.character(gtf$seqnames[1]),"chr") & startsWith(as.character(bw$seqnames[1]),"chr")
-  num_check <- !startsWith(as.character(gtf$seqnames[1]),"chr") & !startsWith(as.character(bw$seqnames[1]),"chr")
+  if (!is.null(bw)) {
+    chr_check <- startsWith(as.character(gtf$seqnames[1]),"chr") & startsWith(as.character(bw$seqnames[1]),"chr")
+    num_check <- !startsWith(as.character(gtf$seqnames[1]),"chr") & !startsWith(as.character(bw$seqnames[1]),"chr")
+    
+  }else{
+    chr_check <- startsWith(as.character(gtf$seqnames[1]),"chr") 
+    num_check <- !startsWith(as.character(gtf$seqnames[1]),"chr") 
+    
+  }
 
   if(chr_check | num_check){
     message("Seqnames prefix for gtf and bigwig files are same.")
