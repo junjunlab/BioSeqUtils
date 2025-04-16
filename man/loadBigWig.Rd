@@ -8,7 +8,7 @@ loadBigWig(
   bw_file = NULL,
   file_name = NULL,
   chrom = NULL,
-  format = c("bw", "bedgraph")
+  format = c("bw", "bedGraph")
 )
 }
 \arguments{

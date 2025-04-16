@@ -70,8 +70,8 @@ loadBed <- function(bed_file = NULL,file_name = NULL){
 #' @importFrom fastplyr f_filter f_select
 #'
 #' @export
-loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL,format = c("bw","bedgraph")){
-  format <- match.arg(format,choices = c("bw","bedgraph"))
+loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL,format = c("bw","bedGraph")){
+  format <- match.arg(format,choices = c("bw","bedGraph"))
   # loop read bed
   plyr::ldply(1:length(bw_file),function(x){
     tmp <- rtracklayer::import(bw_file[x],format = format)
