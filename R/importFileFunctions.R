@@ -67,6 +67,8 @@ loadBed <- function(bed_file = NULL,file_name = NULL){
 #' loadBigWig(bw_file = c("/path/to/file1.bw", "/path/to/file2.bw"), chrom = c("chr1", "chr2"))
 #' }
 #'
+#' @importFrom fastplyr f_filter f_select
+#'
 #' @export
 loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL,format = "bw"){
   # loop read bed
@@ -75,16 +77,25 @@ loadBigWig <- function(bw_file = NULL,file_name = NULL,chrom = NULL,format = "bw
 
     # filter chromosome
     if(!is.null(chrom)){
-      tmp <- data.frame(tmp %>% plyranges::filter(seqnames %in% chrom) %>%
-                          data.frame() %>%
-                          plyranges::select(-width,-strand))
+      # tmp <- data.frame(tmp %>% plyranges::filter(seqnames %in% chrom) %>%
+      #                     data.frame() %>%
+      #                     plyranges::select(-width,-strand))
+      tmp <- data.frame(tmp) %>%
+        fastplyr::f_filter(seqnames %in% chrom) %>%
+        fastplyr::f_select(-width,-strand)
     }else{
       tmp <- data.frame(tmp) %>% plyranges::select(-width,-strand)
     }
 
     # sampe name
     if(is.null(file_name)){
-      spt <- strsplit(bw_file[x],split = "/|.bw|.bigwig") %>% unlist()
+      if(format == "bw"){
+        fixchar <- "/|.bw|.bigwig"
+      }else{
+        fixchar <- "/|.bg|.bedgraph"
+      }
+
+      spt <- strsplit(bw_file[x],split = fixchar) %>% unlist()
       sname <- spt[length(spt)]
     }else{
       sname <- file_name[x]
