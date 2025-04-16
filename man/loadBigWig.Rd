@@ -4,7 +4,12 @@
 \alias{loadBigWig}
 \title{Load BigWig files and filter chromosomes}
 \usage{
-loadBigWig(bw_file = NULL, file_name = NULL, chrom = NULL, format = "bw")
+loadBigWig(
+  bw_file = NULL,
+  file_name = NULL,
+  chrom = NULL,
+  format = c("bw", "bedgraph")
+)
 }
 \arguments{
 \item{bw_file}{character vector of file path to BigWig files to be loaded}
